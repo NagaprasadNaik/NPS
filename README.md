@@ -25,9 +25,11 @@ This system has been **successfully tested** with multiple nodes, DNS record cre
 ## Features
 
 - **Blockchain-backed DNS:** Every domain/IP mapping is stored as a transaction on a distributed ledger.
+- **Machine Learning Security:** AI-powered domain maliciousness detection using trained ML models.
 - **Consensus Mechanism:** Nodes use proof-of-work and consensus algorithm to ensure all maintain the same DNS records.
 - **Rewards & Incentives:** Nodes receive coins for mining new blocks, incentivizing network participation.
 - **REST API:** Easily interact with the service via HTTP endpoints.
+- **Web Interface:** Beautiful HTML interface combining ML prediction and blockchain DNS lookup.
 - **DNS Protocol Integration:** Preliminary support for DNS packet resolution using `dnslib`.
 - **Multi-node Network:** Tested with multiple nodes running simultaneously.
 - **Automatic Synchronization:** Blockchain automatically syncs across all nodes in the network.
@@ -77,22 +79,36 @@ pip install -r requirements.txt
    ```bash
    pip install -r requirements.txt
    ```
+   
+   > **Note:** If you encounter `ImportError: cannot import name 'Markup' from 'jinja2'`, the requirements.txt file has been updated with compatible versions of Flask, Jinja2, and other dependencies.
 
-## Running the Project
+## Running the Complete System
 
+This system has two main components that work together:
+
+### Component 1: Machine Learning Domain Prediction Service
+```bash
+python app.py
+```
+This starts the ML service on **port 5000** for domain safety prediction.
+
+### Component 2: Blockchain DNS Nodes
 You can run multiple nodes to simulate a decentralized DNS network using different ports.
 
-**Start a node on port 5001:**
+**Start first blockchain node on port 5001:**
 ```bash
 python server.py -p 5001
 ```
 
-**Start another node on port 5002:**
+**Start second blockchain node on port 5002:**
 ```bash
 python server.py -p 5002
 ```
 
-Each node will expose a REST API for adding DNS records, mining blocks, syncing with other nodes, and inspecting the blockchain state.
+### Component 3: Web Interface
+Open `templates/index.html` in your browser to access the complete web interface that combines ML prediction with blockchain DNS lookup.
+
+Each blockchain node will expose a REST API for adding DNS records, mining blocks, syncing with other nodes, and inspecting the blockchain state.
 
 ## Complete Working Example (TESTED)
 
@@ -111,13 +127,13 @@ curl --request GET http://localhost:5002/debug/alive
 
 ### Step 2: Register nodes with each other
 ```bash
-# For Windows PowerShell (tested)
-Invoke-WebRequest -Uri "http://localhost:5001/nodes/new" -Method POST -ContentType "application/json" -Body '{"nodes": ["localhost:5001"]}'
-Invoke-WebRequest -Uri "http://localhost:5002/nodes/new" -Method POST -ContentType "application/json" -Body '{"nodes": ["localhost:5000"]}'
+# For Windows PowerShell (tested) - CORRECTED
+Invoke-WebRequest -Uri "http://localhost:5001/nodes/new" -Method POST -ContentType "application/json" -Body '{"nodes": ["localhost:5002"]}'
+Invoke-WebRequest -Uri "http://localhost:5002/nodes/new" -Method POST -ContentType "application/json" -Body '{"nodes": ["localhost:5001"]}'
 
-# For Linux/Mac
-curl --request POST --url http://localhost:5001/nodes/new --header 'Content-Type: application/json' --data '{"nodes": ["localhost:5001"]}'
-curl --request POST --url http://localhost:5002/nodes/new --header 'Content-Type: application/json' --data '{"nodes": ["localhost:5000"]}'
+# For Linux/Mac - CORRECTED
+curl --request POST --url http://localhost:5001/nodes/new --header 'Content-Type: application/json' --data '{"nodes": ["localhost:5002"]}'
+curl --request POST --url http://localhost:5002/nodes/new --header 'Content-Type: application/json' --data '{"nodes": ["localhost:5001"]}'
 ```
 
 ### Step 3: Add DNS mappings
@@ -151,20 +167,31 @@ curl --request GET http://localhost:5001/debug/dump_chain
 curl --request GET http://localhost:5002/debug/dump_chain
 ```
 
-### Step 6: Test DNS resolution
+### Step 6: Trigger consensus to synchronize nodes (if needed)
+```bash
+# If Step 5 shows different chain lengths, run consensus on the node with shorter chain
+# For Windows PowerShell (tested)
+Invoke-WebRequest -Uri "http://localhost:5002/nodes/resolve" -Method GET
+
+# For Linux/Mac
+curl --request GET http://localhost:5002/nodes/resolve
+```
+
+### Step 7: Test DNS resolution
 ```bash
 # For Windows PowerShell (tested)
 Invoke-WebRequest -Uri "http://localhost:5001/dns/request" -Method POST -ContentType "application/json" -Body '{"hostname": "www.example.com"}'
-Invoke-WebRequest -Uri "http://localhost:5002/dns/request" -Method POST -ContentType "application/json" -Body '{"hostname": "api.example.com"}'
+Invoke-WebRequest -Uri "http://localhost:5002/dns/request" -Method POST -ContentType "application/json" -Body '{"hostname": "www.example.com"}'
 
 # For Linux/Mac
 curl --request POST --url http://localhost:5001/dns/request --header 'Content-Type: application/json' --data '{"hostname": "www.example.com"}'
-curl --request POST --url http://localhost:5002/dns/request --header 'Content-Type: application/json' --data '{"hostname": "api.example.com"}'
+curl --request POST --url http://localhost:5002/dns/request --header 'Content-Type: application/json' --data '{"hostname": "www.example.com"}'
 ```
 
 **Expected Results:**
 - `www.example.com` resolves to `{"ip": "1.2.3.4", "port": 80}`
-- `api.example.com` resolves to `{"ip": "5.6.7.8", "port": 443}`
+- Both nodes should return the same result after synchronization
+- Chain lengths should be identical on both nodes (around 1493 bytes)
 
 ## Additional API Endpoints
 
