@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blockchain DNS Lookup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: black;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #ccc;
+        }
+        input[type="text"], button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+        #lookupBtn {
+            background-color: grey;
+            color: black;
+            font-weight: bold;
+            border: none;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        #opt {
+            display: flex;
+            flex-direction: column;
+            align-items: center;        /* Center horizontally */
+            justify-content: center;    /* Center vertically */
+            text-align: center;
+            color: white;
+            padding-top: 20px;
+            /* height: 100vh;              Full viewport height */
+        }
+        #hostname{
+            width: 93%;
+        }
+        #tl{
+            color: white;
+            display: flex;
+            justify-content: center;
+            padding-top: 32px;
+            padding-bottom: 32px;
+        }
+        #logo{
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            border-radius: 113px;
+        }
+
+    </style>
+</head>
+<body>
+    <img id="logo" src="rv.png" alt="logo" />
+    <h1 id="tl">Decentralized DNS system Using Blockchain and Machine Learning</h1>
+    <div class="container">
+        
+        <h2>DNS Lookup (Blockchain-based)</h2>
+        <input type="text" id="hostname" placeholder="Enter domain (e.g. example.com)">
+        
+        <button onclick="checkDomain()">Predict</button>
+        <button onclick="lookupDNS()" id="lookupBtn" disabled>Lookup</button>
+    </div>
+    <div id="opt">
+            <h2 id="resultP"></h2>
+            <h2 id="result"></h2>
+    </div>
+    <script>
+        async function lookupDNS() {
+            const hostname = document.getElementById('hostname').value;
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerText = "Looking up...";
+
+            try {
+            //nodes
+                const response = await fetch('http://127.0.0.1:5001/dns/request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ hostname })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    resultDiv.innerText = `IP Address: ${data.ip}, Port No.: ${data.port}`;
+                } else {
+                    resultDiv.innerText = "No entry found for the hostname.";
+                }
+            } catch (error) {
+                resultDiv.innerText = "Error contacting DNS server.";
+            }
+        }
+
+    async function checkDomain() {
+      const domain = document.getElementById('hostname').value;
+      const resultText = document.getElementById('resultP');
+      const lookupBtn = document.getElementById('lookupBtn');
+
+      if (!domain) {
+        resultText.innerText = "Please enter a domain name.";
+        return;
+      }
+
+      try {
+        const response = await fetch('http://127.0.0.1:5000/predict', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ domain: domain })
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          resultText.innerText = "Error: " + data.error;
+          lookupBtn.disabled = true;
+        } else {
+          resultText.innerText = `Prediction: ${data.label.toUpperCase()}`;
+
+          // Disable/enable Lookup button based on prediction
+            if ((data.label || "").trim().toLowerCase() === "safe") {
+                lookupBtn.disabled = false;
+                lookupBtn.style.backgroundColor = "#007BFF";
+                lookupBtn.style.color = "white";
+                lookupBtn.style.fontWeight = "bold";
+                lookupBtn.style.border = "none";
+
+            } else {
+                lookupBtn.disabled = true;
+                lookupBtn.style.backgroundColor = "grey";
+                lookupBtn.style.color = "black";
+            }
+
+        }
+      } catch (err) {
+        resultText.innerText = "Failed to connect to API.";
+        lookupBtn.disabled = true;
+        console.error(err);
+      }
+    }
+    </script>
+</body>
+</html>
