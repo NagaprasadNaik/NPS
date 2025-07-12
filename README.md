@@ -82,14 +82,14 @@ pip install -r requirements.txt
 
 You can run multiple nodes to simulate a decentralized DNS network using different ports.
 
-**Start a node on port 5000:**
-```bash
-python server.py -p 5000
-```
-
-**Start another node on port 5001:**
+**Start a node on port 5001:**
 ```bash
 python server.py -p 5001
+```
+
+**Start another node on port 5002:**
+```bash
+python server.py -p 5002
 ```
 
 Each node will expose a REST API for adding DNS records, mining blocks, syncing with other nodes, and inspecting the blockchain state.
