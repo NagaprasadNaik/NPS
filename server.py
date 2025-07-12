@@ -59,23 +59,53 @@ def register_node():
 @app.route('/dns/new',methods=['POST'])
 def new_transaction():
     """
-    adds new entries into our resolver instance
+    adds new entries into our resolver instance with ML security analysis
     """
     values = request.get_json()
     required = ['hostname', 'ip', 'port']
     bad_entries = []
+    security_results = []
 
     for value in values:
         if all(k in values[value] for k in required):
             value = values[value]
-            dns_resolver.new_entry(value['hostname'],value['ip'],value['port'])
+            hostname = value['hostname']
+            
+            # 🔍 ML SECURITY ANALYSIS BEFORE STORAGE
+            ml_result = get_ml_analysis(hostname)
+            security_results.append({
+                'hostname': hostname,
+                'security': ml_result
+            })
+            
+            # 🚫 OPTIONAL: Block malicious domains (uncomment to enable)
+            # if ml_result.get('prediction') == 1:  # 1 = malicious
+            #     bad_entries.append({
+            #         'hostname': hostname,
+            #         'reason': f"Blocked: {ml_result.get('label', 'malicious')} (confidence: {ml_result.get('confidence', 0)})"
+            #     })
+            #     continue
+            
+            # ✅ Store DNS record
+            dns_resolver.new_entry(hostname, value['ip'], value['port'])
+            
+            # 📝 Store security analysis on blockchain
+            store_security_analysis(hostname, ml_result)
+            
         else:
             bad_entries.append(value)
 
     if bad_entries:
-        return jsonify(bad_entries),400
+        return jsonify({
+            'error': 'Some entries failed',
+            'bad_entries': bad_entries,
+            'security_analysis': security_results
+        }), 400
     else:
-        response = 'New DNS entry added'
+        response = {
+            'message': 'New DNS entry added with security analysis',
+            'security_analysis': security_results
+        }
         return jsonify(response), 201
 
 @app.route('/dns/request',methods=['POST'])
