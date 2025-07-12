@@ -1,9 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, send_from_directory
 import joblib
 import numpy as np
 import numpy as np
 import string
 from flask_cors import CORS
+import os
 
 
 
@@ -51,6 +52,14 @@ def extract_domain_features(domain):
 @app.route('/')
 def home():
     return "✅ Domain Detection API is running."
+
+@app.route('/web')
+def web_interface():
+    return render_template('index.html')
+
+@app.route('/rv.png')
+def serve_logo():
+    return send_from_directory('templates', 'rv.png')
 
 @app.route('/predict', methods=['POST'])
 def predict():

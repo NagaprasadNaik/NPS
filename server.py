@@ -4,21 +4,20 @@ import json
 import dns
 from uuid import uuid4
 import threading
-from blockchain import Blockchain  # adjust if the file has a different name
+from blockchain import Blockchain
 import uuid
 
+app = Flask(__name__)
+
+# Fix CORS - Allow requests from your web interface
+CORS(app, origins=["http://127.0.0.1:5000", "http://127.0.0.1:5001", "http://127.0.0.1:5002", "http://localhost:5000", "http://localhost:5001", "http://localhost:5002"])
 
 """
-This layer takes care of DNS request and reponse packets
+This layer takes care of DNS request and response packets
 Additionally support packets adding new entries, which should require
 authentication. Other routes implement methods required to maintain
 integrity and consistency of the blockchain.
 """
-
-# Instantiate the Node
-app = Flask(__name__)
-
-CORS(app, origins=["http://127.0.0.1:5500"])
 
 # Generate a globally unique address for this node
 node_identifier = str(uuid4()).replace('-', '')
@@ -57,12 +56,10 @@ def new_transaction():
     adds new entries into our resolver instance
     """
     values = request.get_json()
-    # print(values)
     required = ['hostname', 'ip', 'port']
     bad_entries = []
 
     for value in values:
-        # print(value)
         if all(k in values[value] for k in required):
             value = values[value]
             dns_resolver.new_entry(value['hostname'],value['ip'],value['port'])
@@ -74,7 +71,6 @@ def new_transaction():
     else:
         response = 'New DNS entry added'
         return jsonify(response), 201
-
 
 @app.route('/dns/request',methods=['POST'])
 def dns_lookup():
@@ -108,17 +104,6 @@ def consensus():
     t = threading.Thread(target=dns_resolver.blockchain.resolve_conflicts)
     t.start()
 
-    # if replaced:
-    # 	response = {
-    # 		'message': 'Our chain was replaced',
-    # 		'new_chain': dns_resolver.dump_chain()
-    # 	}
-    # else:
-    # 	response = {
-    # 		'message': 'Our chain is authoritative',
-    # 		'chain': dns_resolver.dump_chain()
-    # 	}
-
     return jsonify(None), 200
 
 @app.route('/debug/dump_chain',methods=['GET'])
@@ -142,19 +127,12 @@ def get_chain_quota():
     response = dns_resolver.get_chain_quota()
     return jsonify(response),200
 
-
 if __name__ == '__main__':
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
-    # default port for DNS should be 53
     parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
     args = parser.parse_args()
     port = args.port
 
-    node_identifier = str(uuid.uuid4()).replace('-', '')
-    blockchain = Blockchain(node_identifier)
-
-
     app.run(host='127.0.0.1', port=port, debug=True)
-
