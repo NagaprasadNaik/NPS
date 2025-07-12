@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 import json
 import dns
@@ -29,6 +29,10 @@ dns_resolver = dns.dns_layer(node_identifier = node_identifier)
 def check_alive():
     response = 'The node is alive'
     return  jsonify(response),200
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
 
 @app.route('/nodes/new',methods=['POST'])
 def register_node():
@@ -119,13 +123,145 @@ def dump_buffer():
 
 @app.route('/debug/force_block',methods=['GET'])
 def force_block():
+    # Check if there are pending transactions before mining
+    buffer = dns_resolver.dump_buffer()
+    if not buffer:
+        return jsonify({
+            "error": "No pending transactions to mine. Add DNS records first.",
+            "pending_transactions": 0
+        }), 400
+    
     response = dns_resolver.mine_block()
-    return jsonify(f"New block mined with proof {response}"), 200
+    return jsonify({
+        "message": f"New block mined with proof {response}",
+        "transactions_included": len(buffer)
+    }), 200
 
 @app.route('/debug/get_quota',methods=['GET'])
 def get_chain_quota():
     response = dns_resolver.get_chain_quota()
     return jsonify(response),200
+
+@app.route('/api/stats',methods=['GET'])
+def get_blockchain_stats():
+    """
+    Get comprehensive blockchain statistics for dashboard
+    """
+    try:
+        chain = dns_resolver.blockchain.chain
+        buffer = dns_resolver.blockchain.current_transactions
+        nodes = list(dns_resolver.blockchain.nodes)
+        
+        # Calculate statistics
+        total_blocks = len(chain)
+        total_transactions = sum(len(block['transactions']) for block in chain)
+        pending_transactions = len(buffer)
+        network_size = len(nodes)
+        latest_block = chain[-1] if chain else None
+        
+        # DNS record count
+        dns_records = 0
+        for block in chain:
+            for tx in block['transactions']:
+                if 'hostname' in tx:
+                    dns_records += 1
+        
+        response = {
+            'total_blocks': total_blocks,
+            'total_transactions': total_transactions,
+            'pending_transactions': pending_transactions,
+            'dns_records': dns_records,
+            'network_size': network_size,
+            'node_quota': dns_resolver.get_chain_quota(),
+            'latest_block': latest_block,
+            'connected_nodes': nodes
+        }
+        return jsonify(response), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/transactions',methods=['GET'])
+def get_all_transactions():
+    """
+    Get all transactions from blockchain for transaction history
+    """
+    try:
+        transactions = []
+        for block in dns_resolver.blockchain.chain:
+            for tx in block['transactions']:
+                tx_data = tx.copy()
+                tx_data['block_index'] = block['index']
+                tx_data['block_timestamp'] = block['timestamp']
+                tx_data['block_source'] = block['source']
+                transactions.append(tx_data)
+        
+        # Sort by timestamp (newest first)
+        transactions.sort(key=lambda x: x.get('block_timestamp', 0), reverse=True)
+        
+        return jsonify(transactions), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/dns-records',methods=['GET'])
+def get_dns_records():
+    """
+    Get all DNS records for management interface
+    """
+    try:
+        dns_records = []
+        for block in dns_resolver.blockchain.chain:
+            for tx in block['transactions']:
+                if 'hostname' in tx and 'ip' in tx:
+                    record = {
+                        'hostname': tx['hostname'],
+                        'ip': tx['ip'],
+                        'port': tx['port'],
+                        'block_index': block['index'],
+                        'timestamp': block['timestamp']
+                    }
+                    dns_records.append(record)
+        
+        return jsonify(dns_records), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/add-dns-record',methods=['POST'])
+def add_dns_record():
+    """
+    Add a new DNS record to the blockchain
+    """
+    try:
+        data = request.get_json()
+        required = ['hostname', 'ip', 'port']
+        
+        if not all(k in data for k in required):
+            return jsonify({'error': 'Missing required fields'}), 400
+        
+        dns_resolver.new_entry(data['hostname'], data['ip'], int(data['port']))
+        
+        return jsonify({'message': 'DNS record added successfully'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/network-info',methods=['GET'])
+def get_network_info():
+    """
+    Get network topology information
+    """
+    try:
+        nodes = list(dns_resolver.blockchain.nodes)
+        current_node = f"127.0.0.1:{request.environ.get('SERVER_PORT', '5001')}"
+        
+        network_info = {
+            'current_node': current_node,
+            'connected_nodes': nodes,
+            'total_nodes': len(nodes) + 1,  # +1 for current node
+            'node_id': dns_resolver.node_identifier[:8]  # First 8 chars of UUID
+        }
+        
+        return jsonify(network_info), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -136,3 +272,4 @@ if __name__ == '__main__':
     port = args.port
 
     app.run(host='127.0.0.1', port=port, debug=True)
+

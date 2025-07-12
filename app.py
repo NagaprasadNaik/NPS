@@ -57,6 +57,10 @@ def home():
 def web_interface():
     return render_template('index.html')
 
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
 @app.route('/rv.png')
 def serve_logo():
     return send_from_directory('templates', 'rv.png')
