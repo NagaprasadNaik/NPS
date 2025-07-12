@@ -101,65 +101,65 @@ Here's a complete step-by-step example that has been tested and verified to work
 ### Step 1: Check if nodes are alive
 ```bash
 # For Windows PowerShell (tested)
-Invoke-WebRequest -Uri "http://localhost:5000/debug/alive" -Method GET
 Invoke-WebRequest -Uri "http://localhost:5001/debug/alive" -Method GET
+Invoke-WebRequest -Uri "http://localhost:5002/debug/alive" -Method GET
 
 # For Linux/Mac
-curl --request GET http://localhost:5000/debug/alive
 curl --request GET http://localhost:5001/debug/alive
+curl --request GET http://localhost:5002/debug/alive
 ```
 
 ### Step 2: Register nodes with each other
 ```bash
 # For Windows PowerShell (tested)
-Invoke-WebRequest -Uri "http://localhost:5000/nodes/new" -Method POST -ContentType "application/json" -Body '{"nodes": ["localhost:5001"]}'
-Invoke-WebRequest -Uri "http://localhost:5001/nodes/new" -Method POST -ContentType "application/json" -Body '{"nodes": ["localhost:5000"]}'
+Invoke-WebRequest -Uri "http://localhost:5001/nodes/new" -Method POST -ContentType "application/json" -Body '{"nodes": ["localhost:5001"]}'
+Invoke-WebRequest -Uri "http://localhost:5002/nodes/new" -Method POST -ContentType "application/json" -Body '{"nodes": ["localhost:5000"]}'
 
 # For Linux/Mac
-curl --request POST --url http://localhost:5000/nodes/new --header 'Content-Type: application/json' --data '{"nodes": ["localhost:5001"]}'
-curl --request POST --url http://localhost:5001/nodes/new --header 'Content-Type: application/json' --data '{"nodes": ["localhost:5000"]}'
+curl --request POST --url http://localhost:5001/nodes/new --header 'Content-Type: application/json' --data '{"nodes": ["localhost:5001"]}'
+curl --request POST --url http://localhost:5002/nodes/new --header 'Content-Type: application/json' --data '{"nodes": ["localhost:5000"]}'
 ```
 
 ### Step 3: Add DNS mappings
 ```bash
 # For Windows PowerShell (tested)
-Invoke-WebRequest -Uri "http://localhost:5000/dns/new" -Method POST -ContentType "application/json" -Body '{"entry1": {"hostname": "www.example.com", "ip": "1.2.3.4", "port": 80}}'
-Invoke-WebRequest -Uri "http://localhost:5000/dns/new" -Method POST -ContentType "application/json" -Body '{"entry1": {"hostname": "api.example.com", "ip": "5.6.7.8", "port": 443}}'
+Invoke-WebRequest -Uri "http://localhost:5001/dns/new" -Method POST -ContentType "application/json" -Body '{"entry1": {"hostname": "www.example.com", "ip": "1.2.3.4", "port": 80}}'
+Invoke-WebRequest -Uri "http://localhost:5001/dns/new" -Method POST -ContentType "application/json" -Body '{"entry1": {"hostname": "api.example.com", "ip": "5.6.7.8", "port": 443}}'
 
 # For Linux/Mac
-curl --request POST --url http://localhost:5000/dns/new --header 'Content-Type: application/json' --data '{"entry1": {"hostname": "www.example.com", "ip": "1.2.3.4", "port": 80}}'
-curl --request POST --url http://localhost:5000/dns/new --header 'Content-Type: application/json' --data '{"entry1": {"hostname": "api.example.com", "ip": "5.6.7.8", "port": 443}}'
+curl --request POST --url http://localhost:5001/dns/new --header 'Content-Type: application/json' --data '{"entry1": {"hostname": "www.example.com", "ip": "1.2.3.4", "port": 80}}'
+curl --request POST --url http://localhost:5001/dns/new --header 'Content-Type: application/json' --data '{"entry1": {"hostname": "api.example.com", "ip": "5.6.7.8", "port": 443}}'
 ```
 
 ### Step 4: Mine a block
 ```bash
 # For Windows PowerShell (tested)
-Invoke-WebRequest -Uri "http://localhost:5000/debug/force_block" -Method GET
+Invoke-WebRequest -Uri "http://localhost:5001/debug/force_block" -Method GET
 
 # For Linux/Mac
-curl --request GET http://localhost:5000/debug/force_block
+curl --request GET http://localhost:5001/debug/force_block
 ```
 
 ### Step 5: Verify blockchain synchronization
 ```bash
 # For Windows PowerShell (tested)
-Invoke-WebRequest -Uri "http://localhost:5000/debug/dump_chain" -Method GET
 Invoke-WebRequest -Uri "http://localhost:5001/debug/dump_chain" -Method GET
+Invoke-WebRequest -Uri "http://localhost:5002/debug/dump_chain" -Method GET
 
 # For Linux/Mac
-curl --request GET http://localhost:5000/debug/dump_chain
 curl --request GET http://localhost:5001/debug/dump_chain
+curl --request GET http://localhost:5002/debug/dump_chain
 ```
 
 ### Step 6: Test DNS resolution
 ```bash
 # For Windows PowerShell (tested)
-Invoke-WebRequest -Uri "http://localhost:5000/dns/request" -Method POST -ContentType "application/json" -Body '{"hostname": "www.example.com"}'
-Invoke-WebRequest -Uri "http://localhost:5001/dns/request" -Method POST -ContentType "application/json" -Body '{"hostname": "api.example.com"}'
+Invoke-WebRequest -Uri "http://localhost:5001/dns/request" -Method POST -ContentType "application/json" -Body '{"hostname": "www.example.com"}'
+Invoke-WebRequest -Uri "http://localhost:5002/dns/request" -Method POST -ContentType "application/json" -Body '{"hostname": "api.example.com"}'
 
 # For Linux/Mac
-curl --request POST --url http://localhost:5000/dns/request --header 'Content-Type: application/json' --data '{"hostname": "www.example.com"}'
-curl --request POST --url http://localhost:5001/dns/request --header 'Content-Type: application/json' --data '{"hostname": "api.example.com"}'
+curl --request POST --url http://localhost:5001/dns/request --header 'Content-Type: application/json' --data '{"hostname": "www.example.com"}'
+curl --request POST --url http://localhost:5002/dns/request --header 'Content-Type: application/json' --data '{"hostname": "api.example.com"}'
 ```
 
 **Expected Results:**
