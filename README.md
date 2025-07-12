@@ -301,3 +301,31 @@ Feel free to fork this project and submit pull requests. All contributions are w
 If you encounter any issues or have questions, please open an issue on the GitHub repository.
 
 ---
+
+## 🚀 Dashboard Features
+
+This system includes a comprehensive web-based dashboard for managing and monitoring your Blockchain DNS system:
+
+### ✨ Key Dashboard Features
+- **📊 Real-time Statistics**: Total blocks, transactions, DNS records, network nodes, and node quotas
+- **📈 Interactive Charts**: Live blockchain visualization with Chart.js integration
+- **🔍 Transaction History**: Complete transaction log with filtering and timestamps
+- **🗄️ DNS Records Management**: View and manage all registered domain mappings
+- **🌐 Network Topology**: Visual network node representation with status indicators
+- **⚙️ Node Management**: Add DNS records, force mining, network sync, and real-time alerts
+
+### 🌐 Access Points
+| Interface | URL | Description |
+|-----------|-----|-------------|
+| **Original Interface** | `http://127.0.0.1:5000/web` | Domain security checking |
+| **Dashboard** | `http://127.0.0.1:5001/dashboard` | Complete blockchain management |
+| **ML Security API** | `http://127.0.0.1:5000/predict` | Domain maliciousness detection |
+
+### 🚀 Quick Dashboard Start
+# Terminal 1: python app.py
+# Terminal 2: python server.py -p 5001
+```
+
+The dashboard provides real-time monitoring, interactive charts, complete transaction history, DNS record management, and network topology visualization - all with responsive design and auto-refresh capabilities.
+
+---
