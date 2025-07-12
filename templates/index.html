@@ -620,22 +620,53 @@
                 const data = await response.json();
                 
                 if (response.ok) {
+                    const securityInfo = data.security || {};
+                    const securityClass = securityInfo.label === 'malicious' ? 'status-error' : 'status-safe';
+                    const securityIcon = securityInfo.label === 'malicious' ? 'fa-exclamation-triangle' : 'fa-check-circle';
+                    
                     resultDiv.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
                             <i class="fas fa-check-circle status-safe"></i>
                             <span class="status-safe">DNS Record Found</span>
                         </div>
+                        
+                        ${securityInfo.label ? `
+                        <div style="background: ${securityInfo.label === 'malicious' ? '#fed7d7' : '#f0fff4'}; padding: 1rem; border-radius: 8px; border-left: 4px solid ${securityInfo.label === 'malicious' ? '#f56565' : '#48bb78'}; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <i class="fas ${securityIcon} ${securityClass}"></i>
+                                <strong>Security Analysis: ${securityInfo.label.toUpperCase()}</strong>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #64748b;">
+                                Confidence: ${securityInfo.confidence ? (securityInfo.confidence * 100).toFixed(1) + '%' : 'N/A'}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
                         <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #667eea;">
                             <div style="margin-bottom: 0.5rem;"><strong>IP Address:</strong> ${data.ip}</div>
                             <div><strong>Port:</strong> ${data.port}</div>
                         </div>
                     `;
                 } else {
+                    const securityInfo = data.security || {};
                     resultDiv.innerHTML = `
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                             <i class="fas fa-exclamation-circle status-error"></i>
                             <span class="status-error">No DNS record found for "${hostname}"</span>
                         </div>
+                        
+                        ${securityInfo.label ? `
+                        <div style="background: ${securityInfo.label === 'malicious' ? '#fed7d7' : '#f0fff4'}; padding: 1rem; border-radius: 8px; border-left: 4px solid ${securityInfo.label === 'malicious' ? '#f56565' : '#48bb78'}; margin-top: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <i class="fas ${securityInfo.label === 'malicious' ? 'fa-exclamation-triangle' : 'fa-check-circle'} ${securityInfo.label === 'malicious' ? 'status-error' : 'status-safe'}"></i>
+                                <strong>Security Analysis: ${securityInfo.label.toUpperCase()}</strong>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #64748b;">
+                                Confidence: ${securityInfo.confidence ? (securityInfo.confidence * 100).toFixed(1) + '%' : 'N/A'}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
                         <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b;">
                             This domain is not registered in the blockchain DNS system.
                         </div>

@@ -47,8 +47,6 @@ def extract_domain_features(domain):
     ]
     return np.array(features)
 
-
-
 @app.route('/')
 def home():
     return "✅ Domain Detection API is running."
@@ -72,8 +70,65 @@ def predict():
         features = extract_domain_features(domain).reshape(1, -1)
         features_scaled = scaler.transform(features)
         prediction = model.predict(features_scaled)[0]
+        
+        # Add prediction probability for confidence
+        prediction_proba = model.predict_proba(features_scaled)[0]
+        confidence = float(max(prediction_proba))
+        
         label = "malicious" if prediction == 1 else "safe"
-        return jsonify({"domain": domain, "prediction": int(prediction), "label": label})
+        
+        # Store prediction history for analytics
+        from time import time
+        prediction_data = {
+            "domain": domain,
+            "prediction": int(prediction),
+            "label": label,
+            "confidence": confidence,
+            "timestamp": time()
+        }
+        prediction_history.append(prediction_data)
+        
+        # Keep only last 1000 predictions to avoid memory issues
+        if len(prediction_history) > 1000:
+            prediction_history.pop(0)
+        
+        return jsonify(prediction_data)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+# Security Analytics - Track predictions for dashboard
+prediction_history = []
+
+@app.route('/security-analytics', methods=['GET'])
+def get_security_analytics():
+    """Get security analytics for dashboard"""
+    try:
+        total_predictions = len(prediction_history)
+        malicious_count = sum(1 for p in prediction_history if p['prediction'] == 1)
+        safe_count = total_predictions - malicious_count
+        
+        # Get recent predictions (last 20)
+        recent_predictions = prediction_history[-20:] if len(prediction_history) >= 20 else prediction_history
+        
+        return jsonify({
+            'total_analyzed': total_predictions,
+            'malicious_domains': malicious_count,
+            'safe_domains': safe_count,
+            'threat_percentage': (malicious_count / total_predictions * 100) if total_predictions > 0 else 0,
+            'recent_predictions': recent_predictions
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/threat-feed', methods=['GET'])
+def get_threat_feed():
+    """Get live threat feed"""
+    try:
+        # Get only malicious predictions
+        threats = [p for p in prediction_history if p['prediction'] == 1]
+        # Sort by timestamp (newest first)
+        threats.sort(key=lambda x: x['timestamp'], reverse=True)
+        return jsonify(threats[:10])  # Return last 10 threats
     except Exception as e:
         return jsonify({"error": str(e)})
 

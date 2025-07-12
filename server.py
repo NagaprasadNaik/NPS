@@ -6,6 +6,8 @@ from uuid import uuid4
 import threading
 from blockchain import Blockchain
 import uuid
+import requests
+from time import time
 
 app = Flask(__name__)
 
@@ -79,25 +81,66 @@ def new_transaction():
 @app.route('/dns/request',methods=['POST'])
 def dns_lookup():
     """
-    receives a dns request and responses after resolving
+    Enhanced DNS lookup with ML security analysis
     """
     values = request.get_json()
     required = ['hostname']
     if not all(k in values for k in required):
         return 'Missing values', 400
 
+    hostname = values['hostname']
+    
+    # Get ML security analysis
+    ml_result = get_ml_analysis(hostname)
+    
+    # Store security analysis on blockchain
+    store_security_analysis(hostname, ml_result)
+    
     try:
-        host,port = dns_resolver.lookup(values['hostname'])
+        host, port = dns_resolver.lookup(hostname)
         response = {
-        'ip':host,
-        'port': port
+            'ip': host,
+            'port': port,
+            'security': ml_result  # Include security analysis
         }
         return_code = 200
     except LookupError:
-        response = "No existing entry"
+        response = {
+            'error': 'No existing entry',
+            'security': ml_result  # Still include security info
+        }
         return_code = 401
 
     return jsonify(response), return_code
+
+def get_ml_analysis(hostname):
+    """Call ML service for domain analysis"""
+    try:
+        ml_response = requests.post('http://127.0.0.1:5000/predict', 
+                                  json={'domain': hostname}, 
+                                  timeout=5)
+        if ml_response.status_code == 200:
+            return ml_response.json()
+        else:
+            return {'error': 'ML service error', 'label': 'unknown', 'confidence': 0.0}
+    except Exception as e:
+        return {'error': f'ML service unavailable: {str(e)}', 'label': 'unknown', 'confidence': 0.0}
+
+def store_security_analysis(hostname, ml_result):
+    """Store security analysis on blockchain"""
+    try:
+        security_transaction = {
+            'type': 'security_analysis',
+            'hostname': hostname,
+            'ml_prediction': ml_result.get('prediction', 0),
+            'ml_label': ml_result.get('label', 'unknown'),
+            'confidence': ml_result.get('confidence', 0.0),
+            'timestamp': time(),
+            'analyzer_node': node_identifier
+        }
+        dns_resolver.blockchain.new_transaction(security_transaction)
+    except Exception as e:
+        print(f"Error storing security analysis: {e}")
 
 @app.route('/nodes/resolve',methods=['GET'])
 def consensus():
@@ -159,12 +202,22 @@ def get_blockchain_stats():
         network_size = len(nodes)
         latest_block = chain[-1] if chain else None
         
-        # DNS record count
+        # DNS record count and ML security stats
         dns_records = 0
+        ml_analyzed = 0
+        malicious_domains = 0
+        safe_domains = 0
+        
         for block in chain:
             for tx in block['transactions']:
-                if 'hostname' in tx:
+                if 'hostname' in tx and 'ip' in tx:
                     dns_records += 1
+                elif tx.get('type') == 'security_analysis':
+                    ml_analyzed += 1
+                    if tx['ml_prediction'] == 1:
+                        malicious_domains += 1
+                    else:
+                        safe_domains += 1
         
         response = {
             'total_blocks': total_blocks,
@@ -174,7 +227,12 @@ def get_blockchain_stats():
             'network_size': network_size,
             'node_quota': dns_resolver.get_chain_quota(),
             'latest_block': latest_block,
-            'connected_nodes': nodes
+            'connected_nodes': nodes,
+            # ML Security Stats
+            'ml_analyzed': ml_analyzed,
+            'malicious_domains': malicious_domains,
+            'safe_domains': safe_domains,
+            'threat_percentage': (malicious_domains / ml_analyzed * 100) if ml_analyzed > 0 else 0
         }
         return jsonify(response), 200
     except Exception as e:
@@ -260,6 +318,101 @@ def get_network_info():
         }
         
         return jsonify(network_info), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/security-feed', methods=['GET'])
+def get_security_feed():
+    """Get real-time security analysis feed from blockchain"""
+    try:
+        security_analyses = []
+        
+        # Scan blockchain for security transactions
+        for block in dns_resolver.blockchain.chain:
+            for tx in block['transactions']:
+                if tx.get('type') == 'security_analysis':
+                    security_analyses.append({
+                        'hostname': tx['hostname'],
+                        'prediction': tx['ml_prediction'],
+                        'label': tx['ml_label'],
+                        'confidence': tx['confidence'],
+                        'timestamp': tx['timestamp'],
+                        'block_index': block['index'],
+                        'analyzer_node': tx['analyzer_node']
+                    })
+        
+        # Sort by timestamp (newest first)
+        security_analyses.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        return jsonify(security_analyses[:50])  # Return last 50 analyses
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/threat-stats', methods=['GET'])
+def get_threat_stats():
+    """Get comprehensive threat statistics from blockchain"""
+    try:
+        total_analyzed = 0
+        malicious_count = 0
+        safe_count = 0
+        recent_threats = []
+        
+        for block in dns_resolver.blockchain.chain:
+            for tx in block['transactions']:
+                if tx.get('type') == 'security_analysis':
+                    total_analyzed += 1
+                    if tx['ml_prediction'] == 1:
+                        malicious_count += 1
+                        recent_threats.append({
+                            'hostname': tx['hostname'],
+                            'confidence': tx['confidence'],
+                            'timestamp': tx['timestamp']
+                        })
+                    else:
+                        safe_count += 1
+        
+        # Sort recent threats by timestamp
+        recent_threats.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        return jsonify({
+            'total_analyzed': total_analyzed,
+            'malicious_domains': malicious_count,
+            'safe_domains': safe_count,
+            'threat_percentage': (malicious_count / total_analyzed * 100) if total_analyzed > 0 else 0,
+            'recent_threats': recent_threats[:10],  # Last 10 threats
+            'blockchain_blocks': len(dns_resolver.blockchain.chain),
+            'network_nodes': len(dns_resolver.blockchain.nodes)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml-blockchain-integration', methods=['GET'])
+def get_ml_blockchain_integration():
+    """Get ML-Blockchain integration status and stats"""
+    try:
+        # Test ML service connectivity
+        ml_status = "online"
+        try:
+            test_response = requests.get('http://127.0.0.1:5000/', timeout=3)
+            if test_response.status_code != 200:
+                ml_status = "offline"
+        except:
+            ml_status = "offline"
+        
+        # Count security transactions in blockchain
+        security_tx_count = 0
+        for block in dns_resolver.blockchain.chain:
+            for tx in block['transactions']:
+                if tx.get('type') == 'security_analysis':
+                    security_tx_count += 1
+        
+        return jsonify({
+            'ml_service_status': ml_status,
+            'blockchain_status': 'online',
+            'security_transactions': security_tx_count,
+            'integration_active': ml_status == 'online',
+            'last_analysis_time': time()
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

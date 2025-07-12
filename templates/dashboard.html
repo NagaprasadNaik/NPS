@@ -398,6 +398,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" data-section="security">
+                        <i class="fas fa-shield-alt"></i>
+                        ML Security
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" data-section="network">
                         <i class="fas fa-network-wired"></i>
                         Network Topology
@@ -468,6 +474,31 @@
                     </div>
                     <div class="stat-value" id="nodeQuota">0</div>
                     <div class="stat-label">Node Quota</div>
+                </div>
+                
+                <!-- ML Security Stats -->
+                <div class="stat-card">
+                    <div class="stat-icon" style="color: #f56565;">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="stat-value" id="threatsDetected">0</div>
+                    <div class="stat-label">Threats Detected</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="color: #68d391;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-value" id="safeDomains">0</div>
+                    <div class="stat-label">Safe Domains</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon" style="color: #4299e1;">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="stat-value" id="mlAnalyzed">0</div>
+                    <div class="stat-label">ML Analyzed</div>
                 </div>
             </div>
             
@@ -545,6 +576,58 @@
                         </thead>
                         <tbody id="dnsRecordsTable">
                             <!-- DNS records will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- ML Security Section -->
+            <div class="content-section" id="security">
+                <h2 class="section-title">
+                    <i class="fas fa-shield-alt"></i>
+                    ML Security Intelligence
+                </h2>
+                
+                <div class="stats-grid" style="margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #f56565;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-value" id="threatPercentage">0%</div>
+                        <div class="stat-label">Threat Percentage</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #4299e1;">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="stat-value" id="mlServiceStatus">Offline</div>
+                        <div class="stat-label">ML Service Status</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #48bb78;">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="stat-value" id="integrationStatus">Inactive</div>
+                        <div class="stat-label">Integration Status</div>
+                    </div>
+                </div>
+                
+                <h3 style="margin-bottom: 1rem;">Recent Threat Detections</h3>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Domain</th>
+                                <th>Threat Level</th>
+                                <th>Confidence</th>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="threatTable">
+                            <!-- Threat data will be populated here -->
                         </tbody>
                     </table>
                 </div>
@@ -671,8 +754,87 @@
                     updateStatsDisplay(stats);
                     updateRecentBlocks(stats.latest_block);
                 }
+                
+                // Load ML security stats
+                await loadSecurityStats();
             } catch (error) {
                 console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadSecurityStats() {
+            try {
+                const [threatStatsResponse, integrationResponse] = await Promise.all([
+                    fetch('http://127.0.0.1:5001/api/threat-stats?' + Date.now()),
+                    fetch('http://127.0.0.1:5001/api/ml-blockchain-integration?' + Date.now())
+                ]);
+                
+                if (threatStatsResponse.ok) {
+                    const threatStats = await threatStatsResponse.json();
+                    updateSecurityStatsDisplay(threatStats);
+                }
+                
+                if (integrationResponse.ok) {
+                    const integrationStats = await integrationResponse.json();
+                    updateIntegrationStatus(integrationStats);
+                }
+                
+                // Load security feed
+                await loadSecurityFeed();
+            } catch (error) {
+                console.error('Error loading security stats:', error);
+            }
+        }
+        
+        function updateSecurityStatsDisplay(stats) {
+            document.getElementById('threatsDetected').textContent = stats.malicious_domains;
+            document.getElementById('safeDomains').textContent = stats.safe_domains;
+            document.getElementById('mlAnalyzed').textContent = stats.total_analyzed;
+            document.getElementById('threatPercentage').textContent = stats.threat_percentage.toFixed(1) + '%';
+        }
+        
+        function updateIntegrationStatus(stats) {
+            document.getElementById('mlServiceStatus').textContent = stats.ml_service_status;
+            document.getElementById('integrationStatus').textContent = stats.integration_active ? 'Active' : 'Inactive';
+        }
+        
+        async function loadSecurityFeed() {
+            try {
+                const response = await fetch('http://127.0.0.1:5001/api/security-feed?' + Date.now());
+                if (response.ok) {
+                    const securityFeed = await response.json();
+                    updateSecurityFeedDisplay(securityFeed);
+                }
+            } catch (error) {
+                console.error('Error loading security feed:', error);
+            }
+        }
+        
+        function updateSecurityFeedDisplay(feed) {
+            const tbody = document.getElementById('threatTable');
+            tbody.innerHTML = '';
+            
+            const threats = feed.filter(item => item.prediction === 1).slice(0, 10);
+            
+            threats.forEach(threat => {
+                const row = document.createElement('tr');
+                const confidencePercent = (threat.confidence * 100).toFixed(1);
+                const timestamp = new Date(threat.timestamp * 1000).toLocaleString();
+                
+                row.innerHTML = `
+                    <td><code>${threat.hostname}</code></td>
+                    <td><span style="color: #f56565; font-weight: bold;">MALICIOUS</span></td>
+                    <td><span style="background: #fed7d7; color: #c53030; padding: 0.25rem 0.5rem; border-radius: 4px;">${confidencePercent}%</span></td>
+                    <td>${timestamp}</td>
+                    <td><span style="background: #f56565; color: white; padding: 0.25rem 0.5rem; border-radius: 4px;">BLOCKED</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            if (threats.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="5" style="text-align: center; color: #68d391;">No threats detected yet</td>';
+                tbody.appendChild(row);
             }
         }
         
@@ -683,6 +845,11 @@
             document.getElementById('dnsRecords').textContent = stats.dns_records;
             document.getElementById('networkSize').textContent = stats.network_size;
             document.getElementById('nodeQuota').textContent = stats.node_quota;
+            
+            // Update ML Security Stats
+            document.getElementById('threatsDetected').textContent = stats.malicious_domains || 0;
+            document.getElementById('safeDomains').textContent = stats.safe_domains || 0;
+            document.getElementById('mlAnalyzed').textContent = stats.ml_analyzed || 0;
         }
         
         function updateRecentBlocks(latestBlock) {
