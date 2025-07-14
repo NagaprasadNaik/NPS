@@ -106,7 +106,7 @@ python server.py -p 5002
 ```
 
 ### Component 3: Web Interface
-Open `templates/index.html` in your browser to access the complete web interface that combines ML prediction with blockchain DNS lookup.
+Open `http://127.0.0.1:5000` in your browser to access the complete web interface that combines ML prediction with blockchain DNS lookup.
 
 Each blockchain node will expose a REST API for adding DNS records, mining blocks, syncing with other nodes, and inspecting the blockchain state.
 
