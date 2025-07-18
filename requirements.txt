@@ -1,5 +1,7 @@
 flask==2.3.3
 flask-cors==4.0.0
+flask-socketio==5.3.6
+python-socketio==5.8.0
 dnslib==0.9.24
 faker==19.6.2
 requests==2.31.0

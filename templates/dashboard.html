@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -375,6 +376,80 @@
             border: 1px solid #feb2b2;
         }
 
+        /* WebSocket Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 4.7s;
+            animation-fill-mode: both;
+        }
+
+        .notification-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .notification-error {
+            background: #f56565;
+            color: white;
+        }
+
+        .notification-info {
+            background: #4299e1;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+        }
+
+        .status-online {
+            background: #48bb78;
+            color: white;
+        }
+
+        .status-offline {
+            background: #f56565;
+            color: white;
+        }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -591,6 +666,9 @@
     </style>
 </head>
 <body>
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status">🔗 Connecting...</div>
+    
     <div class="dashboard">
         <div class="sidebar">
             <div class="logo-section">
@@ -934,13 +1012,98 @@
         let previousDnsRecordCount = 0;
         let previousTransactionCount = 0;
         
+        // 🔴 WebSocket Connection
+        const socket = io();
+        let isConnected = false;
+        
+        // 🔴 WebSocket Event Handlers
+        socket.on('connect', function() {
+            isConnected = true;
+            console.log('🔗 Connected to WebSocket');
+            showConnectionStatus(true);
+            // Request initial stats
+            socket.emit('request_stats');
+        });
+        
+        socket.on('disconnect', function() {
+            isConnected = false;
+            console.log('❌ Disconnected from WebSocket');
+            showConnectionStatus(false);
+        });
+        
+        socket.on('connected', function(data) {
+            console.log('✅ WebSocket handshake:', data);
+            showNotification('🔗 Connected to Blockchain DNS System', 'success');
+        });
+        
+        socket.on('new_block', function(data) {
+            console.log('🔗 New block mined:', data);
+            showNotification(`🎉 New block mined! Proof: ${data.proof}`, 'success');
+            refreshData(); // Refresh dashboard data
+        });
+        
+        socket.on('new_transaction', function(data) {
+            console.log('📝 New transaction:', data);
+            showNotification(`📝 New DNS record: ${data.hostname}`, 'info');
+            refreshData(); // Refresh dashboard data
+        });
+        
+        socket.on('threat_detected', function(data) {
+            console.log('🚨 Threat detected:', data);
+            showNotification(`🚨 Threat detected: ${data.hostname} (${(data.confidence * 100).toFixed(1)}% confidence)`, 'error');
+            refreshData(); // Refresh dashboard data
+        });
+        
+        socket.on('network_update', function(data) {
+            console.log('🌐 Network update:', data);
+            showNotification(`🌐 Network updated: ${data.action}`, 'info');
+            refreshData(); // Refresh dashboard data
+        });
+        
+        socket.on('stats_update', function(data) {
+            console.log('📊 Stats update:', data);
+            currentStats = data;
+            updateStatsDisplay();
+        });
+        
+        socket.on('error', function(data) {
+            console.error('❌ WebSocket error:', data);
+            showNotification(`❌ Error: ${data.message}`, 'error');
+        });
+        
+        function showConnectionStatus(connected) {
+            const statusEl = document.getElementById('connection-status');
+            if (statusEl) {
+                statusEl.textContent = connected ? '🔗 Connected' : '❌ Disconnected';
+                statusEl.className = connected ? 'status-online' : 'status-offline';
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                ${message}
+            `;
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             initializeNavigation();
             refreshData();
             
-            // Auto-refresh every 5 seconds for near real-time updates
-            setInterval(refreshData, 5000);
+            // Reduced auto-refresh interval since WebSocket provides real-time updates
+            setInterval(refreshData, 15000); // Reduced from 5 seconds to 15 seconds
         });
         
         function initializeNavigation() {

@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 import json
 import dns
 from uuid import uuid4
@@ -14,6 +15,9 @@ app = Flask(__name__)
 # Fix CORS - Allow requests from your web interface
 CORS(app, origins=["http://127.0.0.1:5000", "http://127.0.0.1:5001", "http://127.0.0.1:5002", "http://localhost:5000", "http://localhost:5001", "http://localhost:5002"])
 
+# Initialize WebSocket
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+
 """
 This layer takes care of DNS request and response packets
 Additionally support packets adding new entries, which should require
@@ -26,6 +30,52 @@ node_identifier = str(uuid4()).replace('-', '')
 
 # Instantiate the DNS resolver object
 dns_resolver = dns.dns_layer(node_identifier = node_identifier)
+
+# WebSocket Event Handlers
+@socketio.on('connect')
+def handle_connect():
+    """Handle client connection"""
+    print(f'Client connected: {request.sid}')
+    emit('connected', {
+        'message': 'Connected to Blockchain DNS System',
+        'node_id': node_identifier,
+        'timestamp': time()
+    })
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle client disconnection"""
+    print(f'Client disconnected: {request.sid}')
+
+@socketio.on('request_stats')
+def handle_request_stats():
+    """Handle request for current stats"""
+    try:
+        stats = get_current_stats()
+        emit('stats_update', stats)
+    except Exception as e:
+        emit('error', {'message': str(e)})
+
+def broadcast_event(event_type, data):
+    """Broadcast event to all connected clients"""
+    socketio.emit(event_type, data)
+
+def get_current_stats():
+    """Get current blockchain statistics"""
+    try:
+        chain_length = len(dns_resolver.blockchain.chain)
+        buffer_length = len(dns_resolver.blockchain.current_transactions)
+        node_count = len(dns_resolver.blockchain.nodes) + 1  # +1 for current node
+        
+        return {
+            'chain_length': chain_length,
+            'buffer_length': buffer_length,
+            'node_count': node_count,
+            'node_quota': dns_resolver.blockchain.quota,
+            'timestamp': time()
+        }
+    except Exception as e:
+        return {'error': str(e)}
 
 @app.route('/debug/alive',methods=['GET'])
 def check_alive():
@@ -49,6 +99,14 @@ def register_node():
     else:
         for node in nodes:
             dns_resolver.register_node(node)
+        
+        # 🔴 Broadcast network update
+        broadcast_event('network_update', {
+            'action': 'nodes_added',
+            'nodes_added': nodes,
+            'total_nodes': dns_resolver.get_network_size(),
+            'timestamp': time()
+        })
         
         response,return_code = {
         'message': 'New nodes have been added',
@@ -91,6 +149,24 @@ def new_transaction():
             
             # 📝 Store security analysis on blockchain
             store_security_analysis(hostname, ml_result)
+            
+            # 🔴 Broadcast new transaction event
+            broadcast_event('new_transaction', {
+                'hostname': hostname,
+                'ip': value['ip'],
+                'port': value['port'],
+                'security': ml_result,
+                'timestamp': time()
+            })
+            
+            # 🔴 Broadcast threat detection if malicious
+            if ml_result.get('prediction') == 1:
+                broadcast_event('threat_detected', {
+                    'hostname': hostname,
+                    'confidence': ml_result.get('confidence', 0),
+                    'label': ml_result.get('label', 'malicious'),
+                    'timestamp': time()
+                })
             
         else:
             bad_entries.append(value)
@@ -205,6 +281,18 @@ def force_block():
         }), 400
     
     response = dns_resolver.mine_block()
+    
+    # 🔴 Broadcast new block event
+    broadcast_event('new_block', {
+        'proof': response,
+        'transactions_included': len(buffer),
+        'chain_length': len(dns_resolver.blockchain.chain),
+        'timestamp': time()
+    })
+    
+    # 🔴 Broadcast updated stats
+    broadcast_event('stats_update', get_current_stats())
+    
     return jsonify({
         "message": f"New block mined with proof {response}",
         "transactions_included": len(buffer)
@@ -496,5 +584,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     port = args.port
 
-    app.run(host='127.0.0.1', port=port, debug=True)
+    # Use SocketIO instead of Flask's built-in server
+    print(f"🚀 Starting Blockchain DNS Server with WebSocket support on port {port}")
+    print(f"🌐 Dashboard: http://127.0.0.1:{port}/dashboard")
+    print(f"📊 API Docs: http://127.0.0.1:{port}/debug/alive")
+    
+    socketio.run(app, host='127.0.0.1', port=port, debug=True)
 
