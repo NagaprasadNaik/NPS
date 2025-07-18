@@ -517,6 +517,58 @@
             background: #e2e8f0;
             color: #4a5568;
         }
+        
+        .network-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .network-notification.success {
+            background-color: #48bb78;
+        }
+        
+        .network-notification.warning {
+            background-color: #ed8936;
+        }
+        
+        .network-notification.error {
+            background-color: #f56565;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+        
+        .network-activity {
+            margin-top: 4px;
+            font-size: 10px;
+            color: #666;
+        }
 
         @media (max-width: 768px) {
             .dashboard {
@@ -634,6 +686,10 @@
                     </div>
                     <div class="stat-value" id="networkSize">0</div>
                     <div class="stat-label">Network Nodes</div>
+                    <div class="network-activity" id="networkActivity" style="display: none;">
+                        <i class="fas fa-circle" style="color: #48bb78; font-size: 8px; animation: pulse 1s infinite;"></i>
+                        <span style="font-size: 10px; margin-left: 4px;">Activity</span>
+                    </div>
                 </div>
                 
                 <div class="stat-card" data-card="quota" onclick="showStatDetails('quota')">
@@ -851,13 +907,17 @@
                     <div style="display: flex; gap: 1rem;">
                         <button class="btn btn-success" onclick="forceBlock()">
                             <i class="fas fa-cube"></i>
-                            Force Mine Block
+                            Mine Block
                         </button>
                         <button class="btn btn-primary" onclick="syncNetwork()">
                             <i class="fas fa-sync-alt"></i>
                             Sync Network
                         </button>
                     </div>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                        <i class="fas fa-info-circle"></i> 
+                        Blocks are mined manually only. Click "Mine Block" to process pending transactions.
+                    </p>
                 </div>
             </div>
         </div>
@@ -866,14 +926,18 @@
     <script>
         let currentStats = {};
         let blockchainChart = null;
+        let previousNetworkSize = 0;
+        let previousConnectedNodes = [];
+        let previousDnsRecordCount = 0;
+        let previousTransactionCount = 0;
         
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             initializeNavigation();
             refreshData();
             
-            // Auto-refresh every 30 seconds
-            setInterval(refreshData, 30000);
+            // Auto-refresh every 5 seconds for near real-time updates
+            setInterval(refreshData, 5000);
         });
         
         function initializeNavigation() {
@@ -899,6 +963,14 @@
         
         async function refreshData() {
             try {
+                // Check if we need to sync based on changes detected
+                const needsSync = await checkForChanges();
+                
+                if (needsSync) {
+                    // Only sync if changes detected to avoid unnecessary network calls
+                    await autoSyncNetwork();
+                }
+                
                 await Promise.all([
                     loadStats(),
                     loadTransactions(),
@@ -909,6 +981,81 @@
                 updateChart();
             } catch (error) {
                 console.error('Error refreshing data:', error);
+            }
+        }
+        
+        async function checkForChanges() {
+            try {
+                // Quick check for changes before doing full sync
+                const response = await fetch('http://127.0.0.1:5001/api/stats?' + Date.now());
+                const stats = await response.json();
+                
+                if (response.ok) {
+                    const currentDnsCount = stats.dns_records || 0;
+                    const currentTxCount = stats.total_transactions || 0;
+                    
+                    // Check if DNS records or transactions changed
+                    const dnsChanged = currentDnsCount !== previousDnsRecordCount;
+                    const txChanged = currentTxCount !== previousTransactionCount;
+                    
+                    // Update previous counts
+                    previousDnsRecordCount = currentDnsCount;
+                    previousTransactionCount = currentTxCount;
+                    
+                    // Show notification if new DNS entries detected
+                    if (dnsChanged && previousDnsRecordCount > 0) {
+                        console.log('🔄 New DNS entries detected - triggering sync');
+                        showNetworkAlert('🔄 New DNS entries detected - syncing network...', 'success');
+                    }
+                    
+                    return dnsChanged || txChanged;
+                }
+                
+                return false;
+            } catch (error) {
+                console.log('Error checking for changes:', error);
+                return true; // Sync on error to be safe
+            }
+        }
+        
+        async function autoSyncNetwork() {
+            try {
+                // Silent auto-sync - only sync with connected nodes
+                const networkResponse = await fetch('http://127.0.0.1:5001/api/network-info?' + Date.now());
+                
+                if (!networkResponse.ok) {
+                    return; // Silent failure for auto-sync
+                }
+                
+                const networkInfo = await networkResponse.json();
+                
+                // Only sync with connected nodes (not current node)
+                const connectedNodes = networkInfo.connected_nodes || [];
+                
+                if (connectedNodes.length === 0) {
+                    return; // No nodes to sync with
+                }
+                
+                // Create lightweight sync promises
+                const syncPromises = connectedNodes.map(node => {
+                    const cleanNode = node.replace('localhost', '127.0.0.1');
+                    const nodeUrl = node.startsWith('http://') ? node : `http://${cleanNode}`;
+                    
+                    return fetch(`${nodeUrl}/nodes/resolve`, { 
+                        method: 'GET',
+                        timeout: 3000 // Shorter timeout for auto-sync
+                    }).catch(err => {
+                        // Silent error handling for auto-sync
+                        console.log(`Auto-sync failed for ${nodeUrl}:`, err.message);
+                        return null;
+                    });
+                });
+                
+                await Promise.all(syncPromises);
+                console.log('🔄 Auto-sync completed silently');
+                
+            } catch (error) {
+                console.log('Auto-sync error:', error.message);
             }
         }
         
@@ -1116,11 +1263,74 @@
                 const networkInfo = await response.json();
                 
                 if (response.ok) {
+                    // Check for network changes and show alerts
+                    checkNetworkChanges(networkInfo);
                     updateNetworkTopology(networkInfo);
                 }
             } catch (error) {
                 console.error('Error loading network info:', error);
             }
+        }
+        
+        function checkNetworkChanges(networkInfo) {
+            const currentNetworkSize = networkInfo.connected_nodes ? networkInfo.connected_nodes.length : 0;
+            const currentConnectedNodes = networkInfo.connected_nodes || [];
+            
+            // Show network activity indicator
+            const activityIndicator = document.getElementById('networkActivity');
+            
+            // Check for new nodes
+            if (previousNetworkSize > 0 && currentNetworkSize > previousNetworkSize) {
+                const newNodes = currentConnectedNodes.filter(node => !previousConnectedNodes.includes(node));
+                if (newNodes.length > 0) {
+                    showNetworkAlert(`🎉 New node(s) joined the network: ${newNodes.join(', ')}`, 'success');
+                    showActivityIndicator();
+                }
+            }
+            
+            // Check for removed nodes
+            if (previousNetworkSize > 0 && currentNetworkSize < previousNetworkSize) {
+                const removedNodes = previousConnectedNodes.filter(node => !currentConnectedNodes.includes(node));
+                if (removedNodes.length > 0) {
+                    showNetworkAlert(`⚠️ Node(s) left the network: ${removedNodes.join(', ')}`, 'warning');
+                    showActivityIndicator();
+                }
+            }
+            
+            // Update previous state
+            previousNetworkSize = currentNetworkSize;
+            previousConnectedNodes = [...currentConnectedNodes];
+        }
+        
+        function showActivityIndicator() {
+            const activityIndicator = document.getElementById('networkActivity');
+            activityIndicator.style.display = 'block';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                activityIndicator.style.display = 'none';
+            }, 3000);
+        }
+        
+        function showNetworkAlert(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `network-notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; float: right;">×</button>
+            `;
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
         }
         
         function updateNetworkTopology(networkInfo) {
@@ -1223,7 +1433,21 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    showAlert('DNS record added successfully!', 'success');
+                    // Display security analysis results
+                    const security = result.security_analysis;
+                    if (security && security.label) {
+                        const securityStatus = security.label === 'malicious' ? 'MALICIOUS' : 'SAFE';
+                        const confidence = (security.confidence * 100).toFixed(1);
+                        const securityColor = security.label === 'malicious' ? 'red' : 'green';
+                        
+                        showAlert(`DNS record added successfully! 
+                            <br><strong>Security Analysis:</strong> 
+                            <span style="color: ${securityColor}; font-weight: bold;">${securityStatus}</span> 
+                            (${confidence}% confidence)`, 'success');
+                    } else {
+                        showAlert('DNS record added successfully!', 'success');
+                    }
+                    
                     document.getElementById('newHostname').value = '';
                     document.getElementById('newIp').value = '';
                     document.getElementById('newPort').value = '';
@@ -1256,13 +1480,52 @@
         
         async function syncNetwork() {
             try {
-                const response = await fetch('http://127.0.0.1:5001/nodes/resolve');
+                // First, get network info to discover all nodes
+                const networkResponse = await fetch('http://127.0.0.1:5001/api/network-info');
                 
-                if (response.ok) {
-                    showAlert('Network sync initiated!', 'success');
+                if (!networkResponse.ok) {
+                    showAlert('Error getting network info', 'error');
+                    return;
+                }
+                
+                const networkInfo = await networkResponse.json();
+                
+                // Build list of all nodes (current node + connected nodes)
+                const allNodes = new Set();
+                
+                // Add current node
+                const currentNodePort = networkInfo.current_node.split(':')[1];
+                allNodes.add(`http://127.0.0.1:${currentNodePort}`);
+                
+                // Add all connected nodes
+                networkInfo.connected_nodes.forEach(node => {
+                    // Convert node format to full URL
+                    if (node.startsWith('http://')) {
+                        allNodes.add(node);
+                    } else {
+                        // Assume it's in format "127.0.0.1:5002" or "localhost:5002"
+                        const cleanNode = node.replace('localhost', '127.0.0.1');
+                        allNodes.add(`http://${cleanNode}`);
+                    }
+                });
+                
+                // Create sync promises for all nodes
+                const syncPromises = Array.from(allNodes).map(nodeUrl => 
+                    fetch(`${nodeUrl}/nodes/resolve`)
+                );
+                
+                const responses = await Promise.all(syncPromises);
+                
+                let successCount = 0;
+                responses.forEach(response => {
+                    if (response.ok) successCount++;
+                });
+                
+                if (successCount > 0) {
+                    showAlert(`Network sync completed! ${successCount}/${allNodes.size} nodes synchronized.`, 'success');
                     setTimeout(refreshData, 3000);
                 } else {
-                    showAlert('Error syncing network', 'error');
+                    showAlert('Error syncing network - no nodes responded', 'error');
                 }
             } catch (error) {
                 showAlert('Error: ' + error.message, 'error');
@@ -1496,9 +1759,10 @@
                     </div>
                 </div>
                 
-                <p>Pending transactions are DNS records and security analyses waiting to be mined into the next block.</p>
-                <p><strong>Buffer Limit:</strong> 20 transactions per block</p>
-                <p><strong>Auto-mining:</strong> Triggers when buffer is full or quota is reached</p>
+                <p>Pending transactions are DNS records and security analyses waiting to be manually mined into blocks.</p>
+                <p><strong>Manual Mining:</strong> Click "Mine Block" button to process pending transactions</p>
+                <p><strong>No Auto-Mining:</strong> Transactions remain pending until manually processed</p>
+                <p><strong>Buffer Capacity:</strong> Up to 20 transactions per block</p>
             `;
         }
 

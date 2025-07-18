@@ -48,10 +48,6 @@ def extract_domain_features(domain):
     return np.array(features)
 
 @app.route('/')
-def home():
-    return "✅ Domain Detection API is running."
-
-@app.route('/web')
 def web_interface():
     return render_template('index.html')
 

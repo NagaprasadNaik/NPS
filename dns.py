@@ -82,7 +82,7 @@ class dns_layer(object):
 	def new_entry(self,hostname,ip,port):
 		"""
 		Adds new entry into current transactions in the blockchain.
-		Once we reach a full buffer, mine new block.
+		Transactions are stored in buffer until manually mined.
 		:param hostname: string, hostname
 		:param ip: string, ip of corresponding hostname
 		:param port: int, port of corresponding ip
@@ -93,8 +93,11 @@ class dns_layer(object):
 		'port':port
 		}
 		buffer_len = self.blockchain.new_transaction(new_transaction)
-		if buffer_len >= self.BUFFER_MAX_LEN or buffer_len >= self.blockchain.quota-self.BUFFER_MAX_LEN:
-			self.mine_block()
+		# REMOVED: Automatic mining - now only manual mining via force_block
+		# if buffer_len >= self.BUFFER_MAX_LEN or buffer_len >= self.blockchain.quota-self.BUFFER_MAX_LEN:
+		#	self.mine_block()
+		print(f"Transaction added to buffer. Buffer size: {buffer_len}")
+		return buffer_len
 			
 	def dump_chain(self):
 		response = {

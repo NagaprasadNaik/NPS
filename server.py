@@ -120,11 +120,11 @@ def dns_lookup():
 
     hostname = values['hostname']
     
-    # Get ML security analysis
+    # Get ML security analysis (for display only, don't store again)
     ml_result = get_ml_analysis(hostname)
     
-    # Store security analysis on blockchain
-    store_security_analysis(hostname, ml_result)
+    # NOTE: Removed duplicate store_security_analysis call
+    # Security analysis should only be stored once when domain is first added
     
     try:
         host, port = dns_resolver.lookup(hostname)
@@ -316,7 +316,7 @@ def get_dns_records():
 @app.route('/api/add-dns-record',methods=['POST'])
 def add_dns_record():
     """
-    Add a new DNS record to the blockchain
+    Add a new DNS record to the blockchain with ML security analysis
     """
     try:
         data = request.get_json()
@@ -325,9 +325,29 @@ def add_dns_record():
         if not all(k in data for k in required):
             return jsonify({'error': 'Missing required fields'}), 400
         
-        dns_resolver.new_entry(data['hostname'], data['ip'], int(data['port']))
+        hostname = data['hostname']
         
-        return jsonify({'message': 'DNS record added successfully'}), 201
+        # 🔍 ML SECURITY ANALYSIS BEFORE STORAGE
+        ml_result = get_ml_analysis(hostname)
+        
+        # 🚫 OPTIONAL: Block malicious domains (uncomment to enable)
+        # if ml_result.get('prediction') == 1:  # 1 = malicious
+        #     return jsonify({
+        #         'error': 'Domain blocked',
+        #         'reason': f"Blocked: {ml_result.get('label', 'malicious')} (confidence: {ml_result.get('confidence', 0)})",
+        #         'security_analysis': ml_result
+        #     }), 403
+        
+        # ✅ Store DNS record
+        dns_resolver.new_entry(hostname, data['ip'], int(data['port']))
+        
+        # 📝 Store security analysis on blockchain
+        store_security_analysis(hostname, ml_result)
+        
+        return jsonify({
+            'message': 'DNS record added successfully with security analysis',
+            'security_analysis': ml_result
+        }), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
