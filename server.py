@@ -466,6 +466,28 @@ def get_ml_blockchain_integration():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/pending-transactions', methods=['GET'])
+def get_pending_transactions():
+    """
+    Get all pending transactions from the buffer
+    """
+    try:
+        buffer = dns_resolver.dump_buffer()
+        pending_transactions = []
+        
+        for tx in buffer:
+            tx_data = tx.copy()
+            # Add timestamp for when the transaction was added (approximate)
+            tx_data['added_time'] = time()
+            pending_transactions.append(tx_data)
+        
+        return jsonify({
+            'pending_transactions': pending_transactions,
+            'total_pending': len(pending_transactions)
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     from argparse import ArgumentParser
 

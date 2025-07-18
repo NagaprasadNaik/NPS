@@ -924,6 +924,9 @@
     </div>
     
     <script>
+        // Dynamic base URL to work with any port
+        const baseUrl = `http://${window.location.hostname}:${window.location.port}`;
+        
         let currentStats = {};
         let blockchainChart = null;
         let previousNetworkSize = 0;
@@ -987,7 +990,7 @@
         async function checkForChanges() {
             try {
                 // Quick check for changes before doing full sync
-                const response = await fetch('http://127.0.0.1:5001/api/stats?' + Date.now());
+                const response = await fetch(`${baseUrl}/api/stats?` + Date.now());
                 const stats = await response.json();
                 
                 if (response.ok) {
@@ -1021,7 +1024,7 @@
         async function autoSyncNetwork() {
             try {
                 // Silent auto-sync - only sync with connected nodes
-                const networkResponse = await fetch('http://127.0.0.1:5001/api/network-info?' + Date.now());
+                const networkResponse = await fetch(`${baseUrl}/api/network-info?` + Date.now());
                 
                 if (!networkResponse.ok) {
                     return; // Silent failure for auto-sync
@@ -1061,7 +1064,7 @@
         
         async function loadStats() {
             try {
-                const response = await fetch('http://127.0.0.1:5001/api/stats?' + Date.now());
+                const response = await fetch(`${baseUrl}/api/stats?` + Date.now());
                 const stats = await response.json();
                 
                 if (response.ok) {
@@ -1080,8 +1083,8 @@
         async function loadSecurityStats() {
             try {
                 const [threatStatsResponse, integrationResponse] = await Promise.all([
-                    fetch('http://127.0.0.1:5001/api/threat-stats?' + Date.now()),
-                    fetch('http://127.0.0.1:5001/api/ml-blockchain-integration?' + Date.now())
+                    fetch(`${baseUrl}/api/threat-stats?` + Date.now()),
+                    fetch(`${baseUrl}/api/ml-blockchain-integration?` + Date.now())
                 ]);
                 
                 if (threatStatsResponse.ok) {
@@ -1115,7 +1118,7 @@
         
         async function loadSecurityFeed() {
             try {
-                const response = await fetch('http://127.0.0.1:5001/api/security-feed?' + Date.now());
+                const response = await fetch(`${baseUrl}/api/security-feed?` + Date.now());
                 if (response.ok) {
                     const securityFeed = await response.json();
                     updateSecurityFeedDisplay(securityFeed);
@@ -1186,7 +1189,7 @@
         
         async function loadTransactions() {
             try {
-                const response = await fetch('http://127.0.0.1:5001/api/transactions');
+                const response = await fetch(`${baseUrl}/api/transactions`);
                 const transactions = await response.json();
                 
                 if (response.ok) {
@@ -1229,7 +1232,7 @@
         
         async function loadDnsRecords() {
             try {
-                const response = await fetch('http://127.0.0.1:5001/api/dns-records');
+                const response = await fetch(`${baseUrl}/api/dns-records`);
                 const records = await response.json();
                 
                 if (response.ok) {
@@ -1259,7 +1262,7 @@
         
         async function loadNetworkInfo() {
             try {
-                const response = await fetch('http://127.0.0.1:5001/api/network-info');
+                const response = await fetch(`${baseUrl}/api/network-info`);
                 const networkInfo = await response.json();
                 
                 if (response.ok) {
@@ -1418,7 +1421,7 @@
             }
             
             try {
-                const response = await fetch('http://127.0.0.1:5001/api/add-dns-record', {
+                const response = await fetch(`${baseUrl}/api/add-dns-record`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1464,7 +1467,7 @@
         
         async function forceBlock() {
             try {
-                const response = await fetch('http://127.0.0.1:5001/debug/force_block');
+                const response = await fetch(`${baseUrl}/debug/force_block`);
                 const result = await response.json();
                 
                 if (response.ok) {
@@ -1481,7 +1484,7 @@
         async function syncNetwork() {
             try {
                 // First, get network info to discover all nodes
-                const networkResponse = await fetch('http://127.0.0.1:5001/api/network-info');
+                const networkResponse = await fetch(`${baseUrl}/api/network-info`);
                 
                 if (!networkResponse.ok) {
                     showAlert('Error getting network info', 'error');
@@ -1570,6 +1573,7 @@
         let allDnsRecords = [];
         let securityAnalyses = [];
         let networkNodes = [];
+        let pendingTransactions = [];
 
         // Show detailed statistics in modal
         async function showStatDetails(statType) {
@@ -1618,11 +1622,12 @@
         // Load detailed data for modals
         async function loadDetailData() {
             try {
-                const [transactionsResponse, dnsResponse, securityResponse, networkResponse] = await Promise.all([
+                const [transactionsResponse, dnsResponse, securityResponse, networkResponse, pendingResponse] = await Promise.all([
                     fetch('http://127.0.0.1:5001/api/transactions'),
                     fetch('http://127.0.0.1:5001/api/dns-records'),
                     fetch('http://127.0.0.1:5001/api/security-feed'),
-                    fetch('http://127.0.0.1:5001/api/network-info')
+                    fetch('http://127.0.0.1:5001/api/network-info'),
+                    fetch('http://127.0.0.1:5001/api/pending-transactions')
                 ]);
 
                 if (transactionsResponse.ok) {
@@ -1636,6 +1641,9 @@
                 }
                 if (networkResponse.ok) {
                     networkNodes = await networkResponse.json();
+                }
+                if (pendingResponse.ok) {
+                    pendingTransactions = await pendingResponse.json();
                 }
             } catch (error) {
                 console.error('Error loading detail data:', error);
@@ -1747,22 +1755,72 @@
         function showPendingDetails(titleElement, bodyElement) {
             titleElement.innerHTML = '<i class="fas fa-clock"></i> Pending Transactions';
             
+            const pendingList = pendingTransactions.pending_transactions || [];
+            
             bodyElement.innerHTML = `
                 <div class="detail-grid">
                     <div class="detail-item">
-                        <div class="detail-value">${currentStats.pending_transactions || 0}</div>
+                        <div class="detail-value">${pendingList.length}</div>
                         <div class="detail-label">Pending Count</div>
                     </div>
                     <div class="detail-item">
                         <div class="detail-value">${currentStats.node_quota || 0}</div>
                         <div class="detail-label">Node Quota</div>
                     </div>
+                    <div class="detail-item">
+                        <div class="detail-value">20</div>
+                        <div class="detail-label">Max Per Block</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${pendingList.length > 0 ? 'Ready' : 'Empty'}</div>
+                        <div class="detail-label">Mining Status</div>
+                    </div>
                 </div>
                 
-                <p>Pending transactions are DNS records and security analyses waiting to be manually mined into blocks.</p>
-                <p><strong>Manual Mining:</strong> Click "Mine Block" button to process pending transactions</p>
-                <p><strong>No Auto-Mining:</strong> Transactions remain pending until manually processed</p>
-                <p><strong>Buffer Capacity:</strong> Up to 20 transactions per block</p>
+                ${pendingList.length > 0 ? `
+                    <h3>Pending Transactions</h3>
+                    <table class="modal-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Hostname</th>
+                                <th>IP Address</th>
+                                <th>Port</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${pendingList.map(tx => `
+                                <tr>
+                                    <td>${tx.hostname ? 'DNS Record' : tx.type === 'security_analysis' ? 'Security Analysis' : tx.node ? 'Mining Reward' : 'Unknown'}</td>
+                                    <td>${tx.hostname || 'N/A'}</td>
+                                    <td>${tx.ip || 'N/A'}</td>
+                                    <td>${tx.port || 'N/A'}</td>
+                                    <td>
+                                        ${tx.hostname ? `Maps to ${tx.ip}:${tx.port}` : 
+                                          tx.type === 'security_analysis' ? `${tx.prediction || 'Analysis'} (${tx.confidence || 'N/A'}% confidence)` :
+                                          tx.node ? `Reward: ${tx.reward || 0} coins` : 
+                                          'Unknown transaction type'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                        <h4>Mining Information</h4>
+                        <p><strong>Manual Mining:</strong> Click "Mine Block" button to process these pending transactions</p>
+                        <p><strong>No Auto-Mining:</strong> Transactions remain pending until manually processed</p>
+                        <p><strong>Buffer Capacity:</strong> Up to 20 transactions per block</p>
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3>No Pending Transactions</h3>
+                        <p>All transactions have been processed into blocks.</p>
+                        <p>Add new DNS records or perform security analyses to see pending transactions here.</p>
+                    </div>
+                `}
             `;
         }
 
