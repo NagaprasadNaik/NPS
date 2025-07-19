@@ -1,8 +1,0 @@
-curl -s https://api.github.com/repos/llvm/llvm-project/pulls/143504/
-curl -s https://api.github.com/repos/llvm/llvm-project/pulls/143504
-
-
-
-curl -sL -H "Accept: application/vnd.github.v3.diff" https://api.github.com/repos/llvm/llvm-project/pulls/143504
-
-curl -sL -H "Accept: application/vnd.github.v3.patch" https://api.github.com/repos/llvm/llvm-project/pulls/143504
