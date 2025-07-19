@@ -59,6 +59,14 @@ def dashboard():
 def serve_logo():
     return send_from_directory('templates', 'rv.png')
 
+@app.route('/favicon.ico')
+def serve_favicon():
+    return send_from_directory('templates', 'logo.avif', mimetype='image/avif')
+
+@app.route('/logo.avif')
+def serve_logo_avif():
+    return send_from_directory('templates', 'logo.avif')
+
 @app.route('/predict', methods=['POST'])
 def predict():
     try:

@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blockchain DNS Dashboard</title>
+    
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/avif" href="logo.avif">
+    <link rel="apple-touch-icon" href="logo.avif">
+    <link rel="shortcut icon" href="logo.avif">
+    
+    <!-- Meta Tags for Branding -->
+    <meta name="description" content="Real-time Dashboard for Blockchain DNS System">
+    <meta name="keywords" content="blockchain, dns, dashboard, analytics, security">
+    <meta name="author" content="Blockchain DNS Team">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Blockchain DNS Dashboard">
+    <meta property="og:description" content="Real-time Analytics and Management Dashboard">
+    <meta property="og:image" content="rv.png">
+    <meta property="og:type" content="website">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -50,6 +67,16 @@
             height: 60px;
             border-radius: 50%;
             margin-bottom: 0.5rem;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            object-fit: cover;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+            border-color: rgba(102, 126, 234, 0.5);
         }
 
         .logo-title {
