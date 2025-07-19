@@ -1,0 +1,2285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain DNS Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            color: #333;
+            overflow: hidden;
+        }
+
+        .dashboard {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 0.5rem;
+        }
+
+        .logo-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #64748b;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .stat-card:active {
+            transform: translateY(-3px);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .content-section {
+            display: none;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 2rem;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .table tr:hover {
+            background: #f8fafc;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #2d3748;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+        }
+
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c53030;
+        }
+
+        .network-node {
+            background: #f0f9ff;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .node-icon {
+            font-size: 2rem;
+            color: #667eea;
+        }
+
+        .node-info h4 {
+            margin-bottom: 0.25rem;
+            color: #2d3748;
+        }
+
+        .node-info p {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-online {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-offline {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 2rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .alert-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #feb2b2;
+        }
+
+        /* WebSocket Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 4.7s;
+            animation-fill-mode: both;
+        }
+
+        .notification-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .notification-error {
+            background: #f56565;
+            color: white;
+        }
+
+        .notification-info {
+            background: #4299e1;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+        }
+
+        .status-online {
+            background: #48bb78;
+            color: white;
+        }
+
+        .status-offline {
+            background: #f56565;
+            color: white;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border: none;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            padding: 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .detail-item {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .detail-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-label {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .modal-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .modal-table th,
+        .modal-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-safe {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-malicious {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .status-unknown {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .network-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .network-notification.success {
+            background-color: #48bb78;
+        }
+        
+        .network-notification.warning {
+            background-color: #ed8936;
+        }
+        
+        .network-notification.error {
+            background-color: #f56565;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+        
+        .network-activity {
+            margin-top: 4px;
+            font-size: 10px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                overflow: auto;
+            }
+            
+            .dashboard {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+                flex-shrink: 0;
+            }
+            
+            .main-content {
+                padding: 1rem;
+                height: auto;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" class="connection-status">🔗 Connecting...</div>
+    
+    <div class="dashboard">
+        <div class="sidebar">
+            <div class="logo-section">
+                <img class="logo" src="rv.png" alt="Logo" />
+                <div class="logo-title">DNS Dashboard</div>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link active" data-section="overview">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Overview
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="transactions">
+                        <i class="fas fa-list"></i>
+                        Transaction History
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="dns-records">
+                        <i class="fas fa-database"></i>
+                        DNS Records
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="security">
+                        <i class="fas fa-shield-alt"></i>
+                        ML Security
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="network">
+                        <i class="fas fa-network-wired"></i>
+                        Network Topology
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-section="management">
+                        <i class="fas fa-cogs"></i>
+                        Management
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="main-content">
+            <div class="header">
+                <h1 class="page-title">Blockchain DNS Dashboard</h1>
+                <button class="refresh-btn" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
+                </button>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card" data-card="blocks" onclick="showStatDetails('blocks')">
+                    <div class="stat-icon" style="color: #667eea;">
+                        <i class="fas fa-cube"></i>
+                    </div>
+                    <div class="stat-value" id="totalBlocks">0</div>
+                    <div class="stat-label">Total Blocks</div>
+                </div>
+                
+                <div class="stat-card" data-card="transactions" onclick="showStatDetails('transactions')">
+                    <div class="stat-icon" style="color: #48bb78;">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div class="stat-value" id="totalTransactions">0</div>
+                    <div class="stat-label">Total Transactions</div>
+                </div>
+                
+                <div class="stat-card" data-card="pending" onclick="showStatDetails('pending')">
+                    <div class="stat-icon" style="color: #ed8936;">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-value" id="pendingTransactions">0</div>
+                    <div class="stat-label">Pending Transactions</div>
+                </div>
+                
+                <div class="stat-card" data-card="dns" onclick="showStatDetails('dns')">
+                    <div class="stat-icon" style="color: #e53e3e;">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="stat-value" id="dnsRecords">0</div>
+                    <div class="stat-label">DNS Records</div>
+                </div>
+                
+                <div class="stat-card" data-card="network" onclick="showStatDetails('network')">
+                    <div class="stat-icon" style="color: #9f7aea;">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <div class="stat-value" id="networkSize">0</div>
+                    <div class="stat-label">Network Nodes</div>
+                    <div class="network-activity" id="networkActivity" style="display: none;">
+                        <i class="fas fa-circle" style="color: #48bb78; font-size: 8px; animation: pulse 1s infinite;"></i>
+                        <span style="font-size: 10px; margin-left: 4px;">Activity</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card" data-card="quota" onclick="showStatDetails('quota')">
+                    <div class="stat-icon" style="color: #38b2ac;">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="stat-value" id="nodeQuota">0</div>
+                    <div class="stat-label">Node Quota</div>
+                </div>
+                
+                <!-- ML Security Stats -->
+                <div class="stat-card" data-card="threats" onclick="showStatDetails('threats')">
+                    <div class="stat-icon" style="color: #f56565;">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="stat-value" id="threatsDetected">0</div>
+                    <div class="stat-label">Threats Detected</div>
+                </div>
+                
+                <div class="stat-card" data-card="safe" onclick="showStatDetails('safe')">
+                    <div class="stat-icon" style="color: #68d391;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-value" id="safeDomains">0</div>
+                    <div class="stat-label">Safe Domains</div>
+                </div>
+                
+                <div class="stat-card" data-card="ml" onclick="showStatDetails('ml')">
+                    <div class="stat-icon" style="color: #4299e1;">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="stat-value" id="mlAnalyzed">0</div>
+                    <div class="stat-label">ML Analyzed</div>
+                </div>
+            </div>
+            
+            <!-- Overview Section -->
+            <div class="content-section active" id="overview">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Blockchain Overview
+                </h2>
+                
+                <div class="chart-container">
+                    <canvas id="blockchainChart"></canvas>
+                </div>
+                
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Block #</th>
+                                <th>Timestamp</th>
+                                <th>Transactions</th>
+                                <th>Source Node</th>
+                                <th>Hash</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentBlocks">
+                            <!-- Recent blocks will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Transaction History Section -->
+            <div class="content-section" id="transactions">
+                <h2 class="section-title">
+                    <i class="fas fa-list"></i>
+                    Transaction History
+                </h2>
+                
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Details</th>
+                                <th>Block</th>
+                                <th>Timestamp</th>
+                                <th>Source</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionHistory">
+                            <!-- Transaction history will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- DNS Records Section -->
+            <div class="content-section" id="dns-records">
+                <h2 class="section-title">
+                    <i class="fas fa-database"></i>
+                    DNS Records Management
+                </h2>
+                
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Hostname</th>
+                                <th>IP Address</th>
+                                <th>Port</th>
+                                <th>Block</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dnsRecordsTable">
+                            <!-- DNS records will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- ML Security Section -->
+            <div class="content-section" id="security">
+                <h2 class="section-title">
+                    <i class="fas fa-shield-alt"></i>
+                    ML Security Intelligence
+                </h2>
+                
+                <div class="stats-grid" style="margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #f56565;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-value" id="threatPercentage">0%</div>
+                        <div class="stat-label">Threat Percentage</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #4299e1;">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="stat-value" id="mlServiceStatus">Offline</div>
+                        <div class="stat-label">ML Service Status</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon" style="color: #48bb78;">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="stat-value" id="integrationStatus">Inactive</div>
+                        <div class="stat-label">Integration Status</div>
+                    </div>
+                </div>
+                
+                <h3 style="margin-bottom: 1rem;">Recent Threat Detections</h3>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Domain</th>
+                                <th>Threat Level</th>
+                                <th>Confidence</th>
+                                <th>Timestamp</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="threatTable">
+                            <!-- Threat data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Network Topology Section -->
+            <div class="content-section" id="network">
+                <h2 class="section-title">
+                    <i class="fas fa-network-wired"></i>
+                    Network Topology
+                </h2>
+                
+                <div id="networkNodes">
+                    <!-- Network nodes will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Management Section -->
+            <div class="content-section" id="management">
+                <h2 class="section-title">
+                    <i class="fas fa-cogs"></i>
+                    Node Management
+                </h2>
+                
+                <div class="alert alert-success" id="managementAlert" style="display: none;">
+                    <i class="fas fa-check-circle"></i>
+                    Operation completed successfully!
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Add New DNS Record</label>
+                    <div style="display: grid; grid-template-columns: 2fr 2fr 1fr auto; gap: 1rem; align-items: end;">
+                        <div>
+                            <input type="text" class="form-input" id="newHostname" placeholder="Hostname (e.g., example.com)">
+                        </div>
+                        <div>
+                            <input type="text" class="form-input" id="newIp" placeholder="IP Address">
+                        </div>
+                        <div>
+                            <input type="number" class="form-input" id="newPort" placeholder="Port">
+                        </div>
+                        <div>
+                            <button class="btn btn-primary" onclick="addDnsRecord()">
+                                <i class="fas fa-plus"></i>
+                                Add Record
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Blockchain Operations</label>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-success" onclick="forceBlock()">
+                            <i class="fas fa-cube"></i>
+                            Mine Block
+                        </button>
+                        <button class="btn btn-primary" onclick="syncNetwork()">
+                            <i class="fas fa-sync-alt"></i>
+                            Sync Network
+                        </button>
+                    </div>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                        <i class="fas fa-info-circle"></i> 
+                        Blocks are mined manually only. Click "Mine Block" to process pending transactions.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Dynamic base URL to work with any port
+        const baseUrl = `http://${window.location.hostname}:${window.location.port}`;
+        
+        let currentStats = {};
+        let blockchainChart = null;
+        let previousNetworkSize = 0;
+        let previousConnectedNodes = [];
+        let previousDnsRecordCount = 0;
+        let previousTransactionCount = 0;
+        
+        // 🔴 WebSocket Connection
+        const socket = io();
+        let isConnected = false;
+        
+        // 🔴 WebSocket Event Handlers
+        socket.on('connect', function() {
+            isConnected = true;
+            console.log('🔗 Connected to WebSocket');
+            showConnectionStatus(true);
+            // Request initial stats
+            socket.emit('request_stats');
+        });
+        
+        socket.on('disconnect', function() {
+            isConnected = false;
+            console.log('❌ Disconnected from WebSocket');
+            showConnectionStatus(false);
+        });
+        
+        socket.on('connected', function(data) {
+            console.log('✅ WebSocket handshake:', data);
+            showNotification('🔗 Connected to Blockchain DNS System', 'success');
+        });
+        
+        socket.on('new_block', function(data) {
+            console.log('🔗 New block mined:', data);
+            showNotification(`🎉 New block mined! Proof: ${data.proof}`, 'success');
+            refreshData(); // Refresh dashboard data
+        });
+        
+        socket.on('new_transaction', function(data) {
+            console.log('📝 New transaction:', data);
+            showNotification(`📝 New DNS record: ${data.hostname}`, 'info');
+            refreshData(); // Refresh dashboard data
+        });
+        
+        socket.on('threat_detected', function(data) {
+            console.log('🚨 Threat detected:', data);
+            showNotification(`🚨 Threat detected: ${data.hostname} (${(data.confidence * 100).toFixed(1)}% confidence)`, 'error');
+            refreshData(); // Refresh dashboard data
+        });
+        
+        socket.on('network_update', function(data) {
+            console.log('🌐 Network update:', data);
+            showNotification(`🌐 Network updated: ${data.action}`, 'info');
+            refreshData(); // Refresh dashboard data
+        });
+        
+        socket.on('stats_update', function(data) {
+            console.log('📊 Stats update:', data);
+            currentStats = data;
+            updateStatsDisplay();
+        });
+        
+        socket.on('error', function(data) {
+            console.error('❌ WebSocket error:', data);
+            showNotification(`❌ Error: ${data.message}`, 'error');
+        });
+        
+        function showConnectionStatus(connected) {
+            const statusEl = document.getElementById('connection-status');
+            if (statusEl) {
+                statusEl.textContent = connected ? '🔗 Connected' : '❌ Disconnected';
+                statusEl.className = connected ? 'status-online' : 'status-offline';
+            }
+        }
+        
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                ${message}
+            `;
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeNavigation();
+            refreshData();
+            
+            // Reduced auto-refresh interval since WebSocket provides real-time updates
+            setInterval(refreshData, 15000); // Reduced from 5 seconds to 15 seconds
+        });
+        
+        function initializeNavigation() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.content-section');
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    const targetSection = this.getAttribute('data-section');
+                    
+                    // Update active nav link
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show target section
+                    sections.forEach(section => {
+                        section.classList.remove('active');
+                    });
+                    document.getElementById(targetSection).classList.add('active');
+                });
+            });
+        }
+        
+        async function refreshData() {
+            try {
+                // Check if we need to sync based on changes detected
+                const needsSync = await checkForChanges();
+                
+                if (needsSync) {
+                    // Only sync if changes detected to avoid unnecessary network calls
+                    await autoSyncNetwork();
+                }
+                
+                await Promise.all([
+                    loadStats(),
+                    loadTransactions(),
+                    loadDnsRecords(),
+                    loadNetworkInfo()
+                ]);
+                
+                updateChart();
+            } catch (error) {
+                console.error('Error refreshing data:', error);
+            }
+        }
+        
+        async function checkForChanges() {
+            try {
+                // Quick check for changes before doing full sync
+                const response = await fetch(`${baseUrl}/api/stats?` + Date.now());
+                const stats = await response.json();
+                
+                if (response.ok) {
+                    const currentDnsCount = stats.dns_records || 0;
+                    const currentTxCount = stats.total_transactions || 0;
+                    
+                    // Check if DNS records or transactions changed
+                    const dnsChanged = currentDnsCount !== previousDnsRecordCount;
+                    const txChanged = currentTxCount !== previousTransactionCount;
+                    
+                    // Update previous counts
+                    previousDnsRecordCount = currentDnsCount;
+                    previousTransactionCount = currentTxCount;
+                    
+                    // Show notification if new DNS entries detected
+                    if (dnsChanged && previousDnsRecordCount > 0) {
+                        console.log('🔄 New DNS entries detected - triggering sync');
+                        showNetworkAlert('🔄 New DNS entries detected - syncing network...', 'success');
+                    }
+                    
+                    return dnsChanged || txChanged;
+                }
+                
+                return false;
+            } catch (error) {
+                console.log('Error checking for changes:', error);
+                return true; // Sync on error to be safe
+            }
+        }
+        
+        async function autoSyncNetwork() {
+            try {
+                // Silent auto-sync - only sync with connected nodes
+                const networkResponse = await fetch(`${baseUrl}/api/network-info?` + Date.now());
+                
+                if (!networkResponse.ok) {
+                    return; // Silent failure for auto-sync
+                }
+                
+                const networkInfo = await networkResponse.json();
+                
+                // Only sync with connected nodes (not current node)
+                const connectedNodes = networkInfo.connected_nodes || [];
+                
+                if (connectedNodes.length === 0) {
+                    return; // No nodes to sync with
+                }
+                
+                // Create lightweight sync promises
+                const syncPromises = connectedNodes.map(node => {
+                    const cleanNode = node.replace('localhost', '127.0.0.1');
+                    const nodeUrl = node.startsWith('http://') ? node : `http://${cleanNode}`;
+                    
+                    return fetch(`${nodeUrl}/nodes/resolve`, { 
+                        method: 'GET',
+                        timeout: 3000 // Shorter timeout for auto-sync
+                    }).catch(err => {
+                        // Silent error handling for auto-sync
+                        console.log(`Auto-sync failed for ${nodeUrl}:`, err.message);
+                        return null;
+                    });
+                });
+                
+                await Promise.all(syncPromises);
+                console.log('🔄 Auto-sync completed silently');
+                
+            } catch (error) {
+                console.log('Auto-sync error:', error.message);
+            }
+        }
+        
+        async function loadStats() {
+            try {
+                const response = await fetch(`${baseUrl}/api/stats?` + Date.now());
+                const stats = await response.json();
+                
+                if (response.ok) {
+                    currentStats = stats;
+                    updateStatsDisplay(stats);
+                    updateRecentBlocks(stats.latest_block);
+                }
+                
+                // Load ML security stats
+                await loadSecurityStats();
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadSecurityStats() {
+            try {
+                const [threatStatsResponse, integrationResponse] = await Promise.all([
+                    fetch(`${baseUrl}/api/threat-stats?` + Date.now()),
+                    fetch(`${baseUrl}/api/ml-blockchain-integration?` + Date.now())
+                ]);
+                
+                if (threatStatsResponse.ok) {
+                    const threatStats = await threatStatsResponse.json();
+                    updateSecurityStatsDisplay(threatStats);
+                }
+                
+                if (integrationResponse.ok) {
+                    const integrationStats = await integrationResponse.json();
+                    updateIntegrationStatus(integrationStats);
+                }
+                
+                // Load security feed
+                await loadSecurityFeed();
+            } catch (error) {
+                console.error('Error loading security stats:', error);
+            }
+        }
+        
+        function updateSecurityStatsDisplay(stats) {
+            document.getElementById('threatsDetected').textContent = stats.malicious_domains;
+            document.getElementById('safeDomains').textContent = stats.safe_domains;
+            document.getElementById('mlAnalyzed').textContent = stats.total_analyzed;
+            document.getElementById('threatPercentage').textContent = stats.threat_percentage.toFixed(1) + '%';
+        }
+        
+        function updateIntegrationStatus(stats) {
+            document.getElementById('mlServiceStatus').textContent = stats.ml_service_status;
+            document.getElementById('integrationStatus').textContent = stats.integration_active ? 'Active' : 'Inactive';
+        }
+        
+        async function loadSecurityFeed() {
+            try {
+                const response = await fetch(`${baseUrl}/api/security-feed?` + Date.now());
+                if (response.ok) {
+                    const securityFeed = await response.json();
+                    updateSecurityFeedDisplay(securityFeed);
+                }
+            } catch (error) {
+                console.error('Error loading security feed:', error);
+            }
+        }
+        
+        function updateSecurityFeedDisplay(feed) {
+            const tbody = document.getElementById('threatTable');
+            tbody.innerHTML = '';
+            
+            const threats = feed.filter(item => item.prediction === 1).slice(0, 10);
+            
+            threats.forEach(threat => {
+                const row = document.createElement('tr');
+                const confidencePercent = (threat.confidence * 100).toFixed(1);
+                const timestamp = new Date(threat.timestamp * 1000).toLocaleString();
+                
+                row.innerHTML = `
+                    <td><code>${threat.hostname}</code></td>
+                    <td><span style="color: #f56565; font-weight: bold;">MALICIOUS</span></td>
+                    <td><span style="background: #fed7d7; color: #c53030; padding: 0.25rem 0.5rem; border-radius: 4px;">${confidencePercent}%</span></td>
+                    <td>${timestamp}</td>
+                    <td><span style="background: #f56565; color: white; padding: 0.25rem 0.5rem; border-radius: 4px;">BLOCKED</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            if (threats.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="5" style="text-align: center; color: #68d391;">No threats detected yet</td>';
+                tbody.appendChild(row);
+            }
+        }
+        
+        function updateStatsDisplay(stats) {
+            document.getElementById('totalBlocks').textContent = stats.total_blocks;
+            document.getElementById('totalTransactions').textContent = stats.total_transactions;
+            document.getElementById('pendingTransactions').textContent = stats.pending_transactions;
+            document.getElementById('dnsRecords').textContent = stats.dns_records;
+            document.getElementById('networkSize').textContent = stats.network_size;
+            document.getElementById('nodeQuota').textContent = stats.node_quota;
+            
+            // Update ML Security Stats
+            document.getElementById('threatsDetected').textContent = stats.malicious_domains || 0;
+            document.getElementById('safeDomains').textContent = stats.safe_domains || 0;
+            document.getElementById('mlAnalyzed').textContent = stats.ml_analyzed || 0;
+        }
+        
+        function updateRecentBlocks(latestBlock) {
+            const tbody = document.getElementById('recentBlocks');
+            tbody.innerHTML = '';
+            
+            if (latestBlock) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>#${latestBlock.index}</td>
+                    <td>${new Date(latestBlock.timestamp * 1000).toLocaleString()}</td>
+                    <td>${latestBlock.transactions.length}</td>
+                    <td>${latestBlock.source.substring(0, 8)}...</td>
+                    <td>${latestBlock.previous_hash.substring(0, 16)}...</td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+        
+        async function loadTransactions() {
+            try {
+                const response = await fetch(`${baseUrl}/api/transactions`);
+                const transactions = await response.json();
+                
+                if (response.ok) {
+                    updateTransactionHistory(transactions);
+                }
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+            }
+        }
+        
+        function updateTransactionHistory(transactions) {
+            const tbody = document.getElementById('transactionHistory');
+            tbody.innerHTML = '';
+            
+            transactions.slice(0, 50).forEach(tx => {
+                const row = document.createElement('tr');
+                let details = '';
+                let type = 'Unknown';
+                
+                if (tx.hostname) {
+                    type = 'DNS Record';
+                    details = `${tx.hostname} → ${tx.ip}:${tx.port}`;
+                } else if (tx.reward) {
+                    type = 'Mining Reward';
+                    details = `${tx.reward} coins to ${tx.node.substring(0, 8)}...`;
+                } else {
+                    details = JSON.stringify(tx).substring(0, 50) + '...';
+                }
+                
+                row.innerHTML = `
+                    <td>${type}</td>
+                    <td>${details}</td>
+                    <td>#${tx.block_index}</td>
+                    <td>${new Date(tx.block_timestamp * 1000).toLocaleString()}</td>
+                    <td>${tx.block_source.substring(0, 8)}...</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        async function loadDnsRecords() {
+            try {
+                const response = await fetch(`${baseUrl}/api/dns-records`);
+                const records = await response.json();
+                
+                if (response.ok) {
+                    updateDnsRecordsTable(records);
+                }
+            } catch (error) {
+                console.error('Error loading DNS records:', error);
+            }
+        }
+        
+        function updateDnsRecordsTable(records) {
+            const tbody = document.getElementById('dnsRecordsTable');
+            tbody.innerHTML = '';
+            
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${record.hostname}</td>
+                    <td>${record.ip}</td>
+                    <td>${record.port}</td>
+                    <td>#${record.block_index}</td>
+                    <td>${new Date(record.timestamp * 1000).toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        async function loadNetworkInfo() {
+            try {
+                const response = await fetch(`${baseUrl}/api/network-info`);
+                const networkInfo = await response.json();
+                
+                if (response.ok) {
+                    // Check for network changes and show alerts
+                    checkNetworkChanges(networkInfo);
+                    updateNetworkTopology(networkInfo);
+                }
+            } catch (error) {
+                console.error('Error loading network info:', error);
+            }
+        }
+        
+        function checkNetworkChanges(networkInfo) {
+            const currentNetworkSize = networkInfo.connected_nodes ? networkInfo.connected_nodes.length : 0;
+            const currentConnectedNodes = networkInfo.connected_nodes || [];
+            
+            // Show network activity indicator
+            const activityIndicator = document.getElementById('networkActivity');
+            
+            // Check for new nodes
+            if (previousNetworkSize > 0 && currentNetworkSize > previousNetworkSize) {
+                const newNodes = currentConnectedNodes.filter(node => !previousConnectedNodes.includes(node));
+                if (newNodes.length > 0) {
+                    showNetworkAlert(`🎉 New node(s) joined the network: ${newNodes.join(', ')}`, 'success');
+                    showActivityIndicator();
+                }
+            }
+            
+            // Check for removed nodes
+            if (previousNetworkSize > 0 && currentNetworkSize < previousNetworkSize) {
+                const removedNodes = previousConnectedNodes.filter(node => !currentConnectedNodes.includes(node));
+                if (removedNodes.length > 0) {
+                    showNetworkAlert(`⚠️ Node(s) left the network: ${removedNodes.join(', ')}`, 'warning');
+                    showActivityIndicator();
+                }
+            }
+            
+            // Update previous state
+            previousNetworkSize = currentNetworkSize;
+            previousConnectedNodes = [...currentConnectedNodes];
+        }
+        
+        function showActivityIndicator() {
+            const activityIndicator = document.getElementById('networkActivity');
+            activityIndicator.style.display = 'block';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                activityIndicator.style.display = 'none';
+            }, 3000);
+        }
+        
+        function showNetworkAlert(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `network-notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: inherit; cursor: pointer; float: right;">×</button>
+            `;
+            
+            // Add to page
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        function updateNetworkTopology(networkInfo) {
+            const container = document.getElementById('networkNodes');
+            container.innerHTML = '';
+            
+            // Current node
+            const currentNode = document.createElement('div');
+            currentNode.className = 'network-node';
+            currentNode.innerHTML = `
+                <div class="node-icon">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div class="node-info">
+                    <h4>Current Node (${networkInfo.current_node})</h4>
+                    <p>Node ID: ${networkInfo.node_id}</p>
+                    <span class="status-badge status-online">Online</span>
+                </div>
+            `;
+            container.appendChild(currentNode);
+            
+            // Connected nodes
+            networkInfo.connected_nodes.forEach(node => {
+                const nodeElement = document.createElement('div');
+                nodeElement.className = 'network-node';
+                nodeElement.innerHTML = `
+                    <div class="node-icon">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <div class="node-info">
+                        <h4>Connected Node (${node})</h4>
+                        <p>Peer node in the network</p>
+                        <span class="status-badge status-online">Online</span>
+                    </div>
+                `;
+                container.appendChild(nodeElement);
+            });
+        }
+        
+        function updateChart() {
+            const ctx = document.getElementById('blockchainChart').getContext('2d');
+            
+            if (blockchainChart) {
+                blockchainChart.destroy();
+            }
+            
+            blockchainChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Blocks', 'Transactions', 'DNS Records', 'Network Nodes'],
+                    datasets: [{
+                        label: 'Blockchain Statistics',
+                        data: [
+                            currentStats.total_blocks || 0,
+                            currentStats.total_transactions || 0,
+                            currentStats.dns_records || 0,
+                            currentStats.network_size || 0
+                        ],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        async function addDnsRecord() {
+            const hostname = document.getElementById('newHostname').value.trim();
+            const ip = document.getElementById('newIp').value.trim();
+            const port = document.getElementById('newPort').value.trim();
+            
+            if (!hostname || !ip || !port) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/add-dns-record`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        hostname: hostname,
+                        ip: ip,
+                        port: parseInt(port)
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Display security analysis results
+                    const security = result.security_analysis;
+                    if (security && security.label) {
+                        const securityStatus = security.label === 'malicious' ? 'MALICIOUS' : 'SAFE';
+                        const confidence = (security.confidence * 100).toFixed(1);
+                        const securityColor = security.label === 'malicious' ? 'red' : 'green';
+                        
+                        showAlert(`DNS record added successfully! 
+                            <br><strong>Security Analysis:</strong> 
+                            <span style="color: ${securityColor}; font-weight: bold;">${securityStatus}</span> 
+                            (${confidence}% confidence)`, 'success');
+                    } else {
+                        showAlert('DNS record added successfully!', 'success');
+                    }
+                    
+                    document.getElementById('newHostname').value = '';
+                    document.getElementById('newIp').value = '';
+                    document.getElementById('newPort').value = '';
+                    
+                    // Refresh data
+                    setTimeout(refreshData, 2000);
+                } else {
+                    showAlert('Error: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('Error adding DNS record: ' + error.message, 'error');
+            }
+        }
+        
+        async function forceBlock() {
+            try {
+                const response = await fetch(`${baseUrl}/debug/force_block`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Block mined successfully!', 'success');
+                    setTimeout(refreshData, 2000);
+                } else {
+                    showAlert('Error mining block', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+        
+        async function syncNetwork() {
+            try {
+                // First, get network info to discover all nodes
+                const networkResponse = await fetch(`${baseUrl}/api/network-info`);
+                
+                if (!networkResponse.ok) {
+                    showAlert('Error getting network info', 'error');
+                    return;
+                }
+                
+                const networkInfo = await networkResponse.json();
+                
+                // Build list of all nodes (current node + connected nodes)
+                const allNodes = new Set();
+                
+                // Add current node
+                const currentNodePort = networkInfo.current_node.split(':')[1];
+                allNodes.add(`http://127.0.0.1:${currentNodePort}`);
+                
+                // Add all connected nodes
+                networkInfo.connected_nodes.forEach(node => {
+                    // Convert node format to full URL
+                    if (node.startsWith('http://')) {
+                        allNodes.add(node);
+                    } else {
+                        // Assume it's in format "127.0.0.1:5002" or "localhost:5002"
+                        const cleanNode = node.replace('localhost', '127.0.0.1');
+                        allNodes.add(`http://${cleanNode}`);
+                    }
+                });
+                
+                // Create sync promises for all nodes
+                const syncPromises = Array.from(allNodes).map(nodeUrl => 
+                    fetch(`${nodeUrl}/nodes/resolve`)
+                );
+                
+                const responses = await Promise.all(syncPromises);
+                
+                let successCount = 0;
+                responses.forEach(response => {
+                    if (response.ok) successCount++;
+                });
+                
+                if (successCount > 0) {
+                    showAlert(`Network sync completed! ${successCount}/${allNodes.size} nodes synchronized.`, 'success');
+                    setTimeout(refreshData, 3000);
+                } else {
+                    showAlert('Error syncing network - no nodes responded', 'error');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'error');
+            }
+        }
+        
+        function showAlert(message, type) {
+            const alert = document.getElementById('managementAlert');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                ${message}
+            `;
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+
+    <!-- Modal for Stat Details -->
+    <div id="statModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">
+                    <i class="fas fa-chart-bar"></i>
+                    Statistics Details
+                </h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables for modal functionality
+        let currentStatData = {};
+        let allTransactions = [];
+        let allDnsRecords = [];
+        let securityAnalyses = [];
+        let networkNodes = [];
+        let pendingTransactions = [];
+        let allBlocks = [];
+
+        // Show detailed statistics in modal
+        async function showStatDetails(statType) {
+            const modal = document.getElementById('statModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            // Show modal
+            modal.style.display = 'block';
+
+            // Load fresh data for details
+            await loadDetailData();
+
+            // Configure modal based on stat type
+            switch (statType) {
+                case 'blocks':
+                    showBlocksDetails(modalTitle, modalBody);
+                    break;
+                case 'transactions':
+                    showTransactionsDetails(modalTitle, modalBody);
+                    break;
+                case 'pending':
+                    showPendingDetails(modalTitle, modalBody);
+                    break;
+                case 'dns':
+                    showDnsDetails(modalTitle, modalBody);
+                    break;
+                case 'network':
+                    showNetworkDetails(modalTitle, modalBody);
+                    break;
+                case 'quota':
+                    showQuotaDetails(modalTitle, modalBody);
+                    break;
+                case 'threats':
+                    showThreatsDetails(modalTitle, modalBody);
+                    break;
+                case 'safe':
+                    showSafeDomainsDetails(modalTitle, modalBody);
+                    break;
+                case 'ml':
+                    showMLDetails(modalTitle, modalBody);
+                    break;
+            }
+        }
+
+        // Load detailed data for modals
+        async function loadDetailData() {
+            try {
+                const [transactionsResponse, dnsResponse, securityResponse, networkResponse, pendingResponse, blocksResponse] = await Promise.all([
+                    fetch(`${baseUrl}/api/transactions`),
+                    fetch(`${baseUrl}/api/dns-records`),
+                    fetch(`${baseUrl}/api/security-feed`),
+                    fetch(`${baseUrl}/api/network-info`),
+                    fetch(`${baseUrl}/api/pending-transactions`),
+                    fetch(`${baseUrl}/debug/dump_chain`)
+                ]);
+
+                if (transactionsResponse.ok) {
+                    allTransactions = await transactionsResponse.json();
+                }
+                if (dnsResponse.ok) {
+                    allDnsRecords = await dnsResponse.json();
+                }
+                if (securityResponse.ok) {
+                    securityAnalyses = await securityResponse.json();
+                }
+                if (networkResponse.ok) {
+                    networkNodes = await networkResponse.json();
+                }
+                if (pendingResponse.ok) {
+                    pendingTransactions = await pendingResponse.json();
+                }
+                if (blocksResponse.ok) {
+                    const chainData = await blocksResponse.json();
+                    allBlocks = chainData.chain || [];
+                }
+            } catch (error) {
+                console.error('Error loading detail data:', error);
+            }
+        }
+
+        // Show blocks details
+        function showBlocksDetails(titleElement, bodyElement) {
+            titleElement.innerHTML = '<i class="fas fa-cube"></i> Blockchain Blocks Details';
+            
+            const totalBlocks = currentStats.total_blocks || 0;
+            const genesisBlock = allBlocks.find(block => block.index === 1);
+            const latestBlock = allBlocks.length > 0 ? allBlocks[allBlocks.length - 1] : null;
+            
+            bodyElement.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value">${totalBlocks}</div>
+                        <div class="detail-label">Total Blocks</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${currentStats.total_transactions || 0}</div>
+                        <div class="detail-label">Total Transactions</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${latestBlock ? latestBlock.index : 0}</div>
+                        <div class="detail-label">Latest Block #</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${latestBlock ? new Date(latestBlock.timestamp * 1000).toLocaleString() : 'N/A'}</div>
+                        <div class="detail-label">Latest Block Time</div>
+                    </div>
+                </div>
+                
+                <h3>All Blocks (${allBlocks.length} total)</h3>
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <table class="modal-table">
+                        <thead>
+                            <tr>
+                                <th>Block #</th>
+                                <th>Timestamp</th>
+                                <th>Transactions</th>
+                                <th>Source Node</th>
+                                <th>Previous Hash</th>
+                                <th>Proof</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allBlocks.length > 0 ? allBlocks.map(block => `
+                                <tr style="${block.index === 1 ? 'background-color: #f0f9ff; font-weight: bold;' : ''}">
+                                    <td>${block.index}${block.index === 1 ? ' (Genesis)' : ''}</td>
+                                    <td>${new Date(block.timestamp * 1000).toLocaleString()}</td>
+                                    <td>${block.transactions ? block.transactions.length : 0}</td>
+                                    <td>${block.source ? block.source.substring(0, 8) + '...' : 'N/A'}</td>
+                                    <td>${block.previous_hash ? block.previous_hash.substring(0, 8) + '...' : 'N/A'}</td>
+                                    <td>${block.proof || 'N/A'}</td>
+                                </tr>
+                            `).join('') : '<tr><td colspan="6">No blocks available</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+                
+                ${genesisBlock ? `
+                    <div style="margin-top: 1rem; padding: 1rem; background: #f0f9ff; border-radius: 8px; border: 1px solid #3b82f6;">
+                        <h4 style="margin-bottom: 0.5rem; color: #1e40af;">
+                            <i class="fas fa-star"></i> Genesis Block Information
+                        </h4>
+                        <p><strong>Block #:</strong> ${genesisBlock.index}</p>
+                        <p><strong>Timestamp:</strong> ${new Date(genesisBlock.timestamp * 1000).toLocaleString()}</p>
+                        <p><strong>Transactions:</strong> ${genesisBlock.transactions ? genesisBlock.transactions.length : 0}</p>
+                        <p><strong>Previous Hash:</strong> ${genesisBlock.previous_hash || 'N/A'}</p>
+                        <p><strong>Proof:</strong> ${genesisBlock.proof || 'N/A'}</p>
+                        <p><strong>Source:</strong> ${genesisBlock.source || 'N/A'}</p>
+                    </div>
+                ` : ''}
+                
+                ${latestBlock && latestBlock.index > 1 ? `
+                    <div style="margin-top: 1rem; padding: 1rem; background: #f0fdf4; border-radius: 8px; border: 1px solid #22c55e;">
+                        <h4 style="margin-bottom: 0.5rem; color: #15803d;">
+                            <i class="fas fa-clock"></i> Latest Block Information
+                        </h4>
+                        <p><strong>Block #:</strong> ${latestBlock.index}</p>
+                        <p><strong>Timestamp:</strong> ${new Date(latestBlock.timestamp * 1000).toLocaleString()}</p>
+                        <p><strong>Transactions:</strong> ${latestBlock.transactions ? latestBlock.transactions.length : 0}</p>
+                        <p><strong>Previous Hash:</strong> ${latestBlock.previous_hash ? latestBlock.previous_hash.substring(0, 16) + '...' : 'N/A'}</p>
+                        <p><strong>Proof:</strong> ${latestBlock.proof || 'N/A'}</p>
+                        <p><strong>Source:</strong> ${latestBlock.source || 'N/A'}</p>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Show transactions details
+        function showTransactionsDetails(titleElement, bodyElement) {
+            titleElement.innerHTML = '<i class="fas fa-list"></i> Transactions Details';
+            
+            const recentTransactions = allTransactions.slice(0, 10);
+            
+            bodyElement.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value">${currentStats.total_transactions || 0}</div>
+                        <div class="detail-label">Total Transactions</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${currentStats.pending_transactions || 0}</div>
+                        <div class="detail-label">Pending Transactions</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${currentStats.dns_records || 0}</div>
+                        <div class="detail-label">DNS Transactions</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${currentStats.ml_analyzed || 0}</div>
+                        <div class="detail-label">Security Transactions</div>
+                    </div>
+                </div>
+                
+                <h3>Recent Transactions</h3>
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Details</th>
+                            <th>Block</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${recentTransactions.map(tx => `
+                            <tr>
+                                <td>${tx.hostname ? 'DNS Record' : tx.type === 'security_analysis' ? 'Security Analysis' : 'Other'}</td>
+                                <td>${tx.hostname || tx.hostname || 'N/A'}</td>
+                                <td>${tx.block_index}</td>
+                                <td>${new Date(tx.block_timestamp * 1000).toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Show pending transactions details
+        function showPendingDetails(titleElement, bodyElement) {
+            titleElement.innerHTML = '<i class="fas fa-clock"></i> Pending Transactions';
+            
+            const pendingList = pendingTransactions.pending_transactions || [];
+            
+            bodyElement.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value">${pendingList.length}</div>
+                        <div class="detail-label">Pending Count</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${currentStats.node_quota || 0}</div>
+                        <div class="detail-label">Node Quota</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">20</div>
+                        <div class="detail-label">Max Per Block</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${pendingList.length > 0 ? 'Ready' : 'Empty'}</div>
+                        <div class="detail-label">Mining Status</div>
+                    </div>
+                </div>
+                
+                ${pendingList.length > 0 ? `
+                    <h3>Pending Transactions</h3>
+                    <table class="modal-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Hostname</th>
+                                <th>IP Address</th>
+                                <th>Port</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${pendingList.map(tx => `
+                                <tr>
+                                    <td>${tx.hostname ? 'DNS Record' : tx.type === 'security_analysis' ? 'Security Analysis' : tx.node ? 'Mining Reward' : 'Unknown'}</td>
+                                    <td>${tx.hostname || 'N/A'}</td>
+                                    <td>${tx.ip || 'N/A'}</td>
+                                    <td>${tx.port || 'N/A'}</td>
+                                    <td>
+                                        ${tx.hostname ? `Maps to ${tx.ip}:${tx.port}` : 
+                                          tx.type === 'security_analysis' ? `${tx.prediction || 'Analysis'} (${tx.confidence || 'N/A'}% confidence)` :
+                                          tx.node ? `Reward: ${tx.reward || 0} coins` : 
+                                          'Unknown transaction type'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                        <h4>Mining Information</h4>
+                        <p><strong>Manual Mining:</strong> Click "Mine Block" button to process these pending transactions</p>
+                        <p><strong>No Auto-Mining:</strong> Transactions remain pending until manually processed</p>
+                        <p><strong>Buffer Capacity:</strong> Up to 20 transactions per block</p>
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 2rem; color: #666;">
+                        <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <h3>No Pending Transactions</h3>
+                        <p>All transactions have been processed into blocks.</p>
+                        <p>Add new DNS records or perform security analyses to see pending transactions here.</p>
+                    </div>
+                `}
+            `;
+        }
+
+        // Show DNS records details
+        function showDnsDetails(titleElement, bodyElement) {
+            titleElement.innerHTML = '<i class="fas fa-server"></i> DNS Records Details';
+            
+            bodyElement.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value">${allDnsRecords.length}</div>
+                        <div class="detail-label">Total DNS Records</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${new Set(allDnsRecords.map(r => r.hostname)).size}</div>
+                        <div class="detail-label">Unique Hostnames</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${new Set(allDnsRecords.map(r => r.ip)).size}</div>
+                        <div class="detail-label">Unique IPs</div>
+                    </div>
+                </div>
+                
+                <h3>DNS Records</h3>
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>Hostname</th>
+                            <th>IP Address</th>
+                            <th>Port</th>
+                            <th>Block</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${allDnsRecords.slice(0, 20).map(record => `
+                            <tr>
+                                <td>${record.hostname}</td>
+                                <td>${record.ip}</td>
+                                <td>${record.port}</td>
+                                <td>${record.block_index}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Show network details
+        function showNetworkDetails(titleElement, bodyElement) {
+            titleElement.innerHTML = '<i class="fas fa-network-wired"></i> Network Details';
+            
+            bodyElement.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value">${currentStats.network_size || 0}</div>
+                        <div class="detail-label">Connected Nodes</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${networkNodes.node_id || 'N/A'}</div>
+                        <div class="detail-label">Current Node ID</div>
+                    </div>
+                </div>
+                
+                <h3>Network Topology</h3>
+                <p><strong>Current Node:</strong> ${networkNodes.current_node || 'Unknown'}</p>
+                <p><strong>Connected Nodes:</strong></p>
+                <ul>
+                    ${currentStats.connected_nodes && currentStats.connected_nodes.length > 0 ? 
+                        currentStats.connected_nodes.map(node => `<li>${node}</li>`).join('') : 
+                        '<li>No connected nodes</li>'}
+                </ul>
+            `;
+        }
+
+        // Show quota details
+        function showQuotaDetails(titleElement, bodyElement) {
+            titleElement.innerHTML = '<i class="fas fa-coins"></i> Node Quota Details';
+            
+            bodyElement.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value">${currentStats.node_quota || 0}</div>
+                        <div class="detail-label">Current Quota</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">10</div>
+                        <div class="detail-label">Reward per Block</div>
+                    </div>
+                </div>
+                
+                <h3>Quota System</h3>
+                <p><strong>Starting Quota:</strong> 10 coins</p>
+                <p><strong>Mining Reward:</strong> 10 coins per block mined</p>
+                <p><strong>Transaction Fee:</strong> Used for network operations</p>
+                <p><strong>Current Balance:</strong> ${currentStats.node_quota || 0} coins</p>
+            `;
+        }
+
+        // Show threats details
+        function showThreatsDetails(titleElement, bodyElement) {
+            titleElement.innerHTML = '<i class="fas fa-shield-alt"></i> Threats Detected';
+            
+            const threats = securityAnalyses.filter(s => s.prediction === 1);
+            
+            bodyElement.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value">${threats.length}</div>
+                        <div class="detail-label">Total Threats</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${currentStats.threat_percentage || 0}%</div>
+                        <div class="detail-label">Threat Percentage</div>
+                    </div>
+                </div>
+                
+                <h3>Recent Threats</h3>
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>Confidence</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${threats.slice(0, 10).map(threat => `
+                            <tr>
+                                <td>${threat.hostname}</td>
+                                <td>${(threat.confidence * 100).toFixed(1)}%</td>
+                                <td>${new Date(threat.timestamp * 1000).toLocaleString()}</td>
+                                <td><span class="status-badge status-malicious">Malicious</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Show safe domains details
+        function showSafeDomainsDetails(titleElement, bodyElement) {
+            titleElement.innerHTML = '<i class="fas fa-check-circle"></i> Safe Domains';
+            
+            const safeDomains = securityAnalyses.filter(s => s.prediction === 0);
+            
+            bodyElement.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value">${safeDomains.length}</div>
+                        <div class="detail-label">Safe Domains</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${((safeDomains.length / Math.max(securityAnalyses.length, 1)) * 100).toFixed(1)}%</div>
+                        <div class="detail-label">Safe Percentage</div>
+                    </div>
+                </div>
+                
+                <h3>Recent Safe Domains</h3>
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>Confidence</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${safeDomains.slice(0, 10).map(domain => `
+                            <tr>
+                                <td>${domain.hostname}</td>
+                                <td>${(domain.confidence * 100).toFixed(1)}%</td>
+                                <td>${new Date(domain.timestamp * 1000).toLocaleString()}</td>
+                                <td><span class="status-badge status-safe">Safe</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Show ML analysis details
+        function showMLDetails(titleElement, bodyElement) {
+            titleElement.innerHTML = '<i class="fas fa-brain"></i> ML Analysis Details';
+            
+            bodyElement.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <div class="detail-value">${securityAnalyses.length}</div>
+                        <div class="detail-label">Total Analyzed</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${securityAnalyses.filter(s => s.prediction === 1).length}</div>
+                        <div class="detail-label">Malicious Detected</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${securityAnalyses.filter(s => s.prediction === 0).length}</div>
+                        <div class="detail-label">Safe Classified</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-value">${securityAnalyses.length > 0 ? (securityAnalyses.reduce((sum, s) => sum + s.confidence, 0) / securityAnalyses.length).toFixed(2) : 0}</div>
+                        <div class="detail-label">Avg Confidence</div>
+                    </div>
+                </div>
+                
+                <h3>ML Analysis Feed</h3>
+                <table class="modal-table">
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>Prediction</th>
+                            <th>Confidence</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${securityAnalyses.slice(0, 15).map(analysis => `
+                            <tr>
+                                <td>${analysis.hostname}</td>
+                                <td><span class="status-badge ${analysis.prediction === 1 ? 'status-malicious' : 'status-safe'}">
+                                    ${analysis.label}
+                                </span></td>
+                                <td>${(analysis.confidence * 100).toFixed(1)}%</td>
+                                <td>${new Date(analysis.timestamp * 1000).toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('statModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('statModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

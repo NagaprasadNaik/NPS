@@ -1,98 +1,615 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Blockchain DNS Lookup</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain DNS System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background-color: black;
-        }
-        .container {
-            max-width: 400px;
-            margin: auto;
-            padding: 30px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px #ccc;
-        }
-        input[type="text"], button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        button {
-            background-color: #007BFF;
-            color: white;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-        }
-        #lookupBtn {
-            background-color: grey;
-            color: black;
-            font-weight: bold;
-            border: none;
-        }
-        #result {
-            margin-top: 20px;
-            font-weight: bold;
-        }
-        #opt {
-            display: flex;
-            flex-direction: column;
-            align-items: center;        /* Center horizontally */
-            justify-content: center;    /* Center vertically */
-            text-align: center;
-            color: white;
-            padding-top: 20px;
-            /* height: 100vh;              Full viewport height */
-        }
-        #hostname{
-            width: 93%;
-        }
-        #tl{
-            color: white;
-            display: flex;
-            justify-content: center;
-            padding-top: 32px;
-            padding-bottom: 32px;
-        }
-        #logo{
-            position: absolute;
-            width: 90px;
-            height: 90px;
-            border-radius: 113px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .background-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
+        }
+
+        .header {
+            text-align: center;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .nav-tabs-container {
+            display: flex;
+            justify-content: center;
+            margin: 2rem 0;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-tab {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0 0.25rem;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-tab.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 2rem auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.25);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            font-size: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #64748b;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+        }
+
+        .results-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .result-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .result-content {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .status-safe {
+            color: #38a169;
+            font-weight: 600;
+        }
+
+        .status-malicious {
+            color: #e53e3e;
+            font-weight: 600;
+        }
+
+        .status-error {
+            color: #d69e2e;
+            font-weight: 600;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            max-width: 1000px;
+            margin: 3rem auto;
+            padding: 0 1rem;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .feature-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-description {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .container {
+                margin: 1rem;
+                padding: 2rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-    <img id="logo" src="rv.png" alt="logo" />
-    <h1 id="tl">Decentralized DNS system Using Blockchain and Machine Learning</h1>
-    <div class="container">
-        
-        <h2>DNS Lookup (Blockchain-based)</h2>
-        <input type="text" id="hostname" placeholder="Enter domain (e.g. example.com)">
-        
-        <button onclick="checkDomain()">Predict</button>
-        <button onclick="lookupDNS()" id="lookupBtn" disabled>Lookup</button>
+    <div class="background-pattern"></div>
+    
+    <div class="header">
+        <img class="logo" src="rv.png" alt="Blockchain DNS Logo" />
+        <h1 class="title">Blockchain DNS System</h1>
+        <p class="subtitle">Decentralized Domain Name System powered by Blockchain Technology and Machine Learning Security</p>
     </div>
-    <div id="opt">
-            <h2 id="resultP"></h2>
-            <h2 id="result"></h2>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs-container">
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('lookup')">
+                <i class="fas fa-search"></i>
+                DNS Lookup
+            </button>
+            <button class="nav-tab" onclick="switchTab('dashboard')">
+                <i class="fas fa-tachometer-alt"></i>
+                Dashboard
+            </button>
+        </div>
     </div>
+
+    <!-- DNS Lookup Tab -->
+    <div class="tab-content active" id="lookup-tab">
+        <div class="container">
+            <h2 class="section-title">
+                <i class="fas fa-search"></i>
+                Domain Analysis & Lookup
+            </h2>
+            
+            <div class="input-group">
+                <i class="fas fa-globe"></i>
+                <input type="text" id="hostname" placeholder="Enter domain name (e.g., example.com)" autocomplete="off">
+            </div>
+            
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="checkDomain()">
+                    <i class="fas fa-shield-alt"></i>
+                    Analyze Security
+                </button>
+                <button class="btn btn-secondary" onclick="lookupDNS()" id="lookupBtn" disabled>
+                    <i class="fas fa-search"></i>
+                    DNS Lookup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div class="tab-content" id="dashboard-tab">
+        <div class="dashboard-container">
+            <iframe src="http://127.0.0.1:5001/dashboard" width="100%" height="800px" frameborder="0" style="border-radius: 15px; background: white;"></iframe>
+        </div>
+    </div>
+
+    <div class="results-container">
+        <div id="securityResult" class="result-card" style="display: none;">
+            <div class="result-title">
+                <i class="fas fa-shield-alt"></i>
+                Security Analysis
+            </div>
+            <div class="result-content" id="resultP"></div>
+        </div>
+        
+        <div id="dnsResult" class="result-card" style="display: none;">
+            <div class="result-title">
+                <i class="fas fa-server"></i>
+                DNS Resolution
+            </div>
+            <div class="result-content" id="result"></div>
+        </div>
+    </div>
+
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-cube"></i>
+            </div>
+            <h3 class="feature-title">Blockchain Technology</h3>
+            <p class="feature-description">Decentralized DNS records stored on an immutable blockchain ledger</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-brain"></i>
+            </div>
+            <h3 class="feature-title">AI Security</h3>
+            <p class="feature-description">Machine learning algorithms detect malicious domains before resolution</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <h3 class="feature-title">Distributed Network</h3>
+            <p class="feature-description">Multiple nodes ensure high availability and consensus</p>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-lock"></i>
+            </div>
+            <h3 class="feature-title">Tamper Resistant</h3>
+            <p class="feature-description">Cryptographic security prevents unauthorized DNS modifications</p>
+        </div>
+    </div>
+
     <script>
-        async function lookupDNS() {
-            const hostname = document.getElementById('hostname').value;
-            const resultDiv = document.getElementById('result');
-            resultDiv.innerText = "Looking up...";
+        // Enhanced JavaScript with better UX
+        let isAnalyzing = false;
+        let isLookingUp = false;
+
+        function showResultCard(cardId) {
+            const card = document.getElementById(cardId);
+            card.style.display = 'block';
+            setTimeout(() => {
+                card.classList.add('show');
+            }, 100);
+        }
+
+        function hideResultCard(cardId) {
+            const card = document.getElementById(cardId);
+            card.classList.remove('show');
+            setTimeout(() => {
+                card.style.display = 'none';
+            }, 300);
+        }
+
+        async function checkDomain() {
+            if (isAnalyzing) return;
+            
+            const domain = document.getElementById('hostname').value.trim();
+            const resultText = document.getElementById('resultP');
+            const lookupBtn = document.getElementById('lookupBtn');
+            const analyzeBtn = document.querySelector('.btn-primary');
+
+            if (!domain) {
+                resultText.innerHTML = '<span class="status-error">Please enter a domain name</span>';
+                showResultCard('securityResult');
+                return;
+            }
+
+            isAnalyzing = true;
+            analyzeBtn.innerHTML = '<div class="loading"></div> Analyzing...';
+            analyzeBtn.disabled = true;
+
+            // Show result card with loading state
+            resultText.innerHTML = '<div class="loading"></div> Analyzing domain security...';
+            showResultCard('securityResult');
 
             try {
-            //nodes
-                const response = await fetch('http://127.0.0.1:5001/dns/request', {
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ domain: domain })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    resultText.innerHTML = `<span class="status-error">Error: ${data.error}</span>`;
+                    lookupBtn.disabled = true;
+                    lookupBtn.className = 'btn btn-secondary';
+                } else {
+                    const isSecure = (data.label || "").trim().toLowerCase() === "safe";
+                    const statusClass = isSecure ? 'status-safe' : 'status-malicious';
+                    const icon = isSecure ? 'fa-check-circle' : 'fa-exclamation-triangle';
+                    
+                    resultText.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem;">
+                            <i class="fas ${icon}"></i>
+                            <span class="${statusClass}">${data.label.toUpperCase()}</span>
+                        </div>
+                        <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b;">
+                            ${isSecure ? 'This domain appears to be safe for DNS resolution.' : 'This domain has been flagged as potentially malicious.'}
+                        </div>
+                    `;
+
+                    // Update lookup button
+                    if (isSecure) {
+                        lookupBtn.disabled = false;
+                        lookupBtn.className = 'btn btn-success';
+                        lookupBtn.innerHTML = '<i class="fas fa-search"></i> DNS Lookup';
+                    } else {
+                        lookupBtn.disabled = true;
+                        lookupBtn.className = 'btn btn-secondary';
+                        lookupBtn.innerHTML = '<i class="fas fa-ban"></i> Blocked';
+                    }
+                }
+            } catch (err) {
+                resultText.innerHTML = '<span class="status-error">Failed to connect to security API</span>';
+                lookupBtn.disabled = true;
+                lookupBtn.className = 'btn btn-secondary';
+                console.error(err);
+            } finally {
+                isAnalyzing = false;
+                analyzeBtn.innerHTML = '<i class="fas fa-shield-alt"></i> Analyze Security';
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        async function lookupDNS() {
+            if (isLookingUp) return;
+            
+            const hostname = document.getElementById('hostname').value.trim();
+            const resultDiv = document.getElementById('result');
+            const lookupBtn = document.getElementById('lookupBtn');
+
+            if (!hostname) {
+                resultDiv.innerHTML = '<span class="status-error">Please enter a domain name</span>';
+                showResultCard('dnsResult');
+                return;
+            }
+
+            isLookingUp = true;
+            lookupBtn.innerHTML = '<div class="loading"></div> Looking up...';
+            lookupBtn.disabled = true;
+
+            // Show result card with loading state
+            resultDiv.innerHTML = '<div class="loading"></div> Searching blockchain DNS records...';
+            showResultCard('dnsResult');
+
+            try {
+                const response = await fetch('http://127.0.0.1:5002/dns/request', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -101,64 +618,108 @@
                 });
 
                 const data = await response.json();
+                
                 if (response.ok) {
-                    resultDiv.innerText = `IP Address: ${data.ip}, Port No.: ${data.port}`;
+                    const securityInfo = data.security || {};
+                    const securityClass = securityInfo.label === 'malicious' ? 'status-error' : 'status-safe';
+                    const securityIcon = securityInfo.label === 'malicious' ? 'fa-exclamation-triangle' : 'fa-check-circle';
+                    
+                    resultDiv.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                            <i class="fas fa-check-circle status-safe"></i>
+                            <span class="status-safe">DNS Record Found</span>
+                        </div>
+                        
+                        ${securityInfo.label ? `
+                        <div style="background: ${securityInfo.label === 'malicious' ? '#fed7d7' : '#f0fff4'}; padding: 1rem; border-radius: 8px; border-left: 4px solid ${securityInfo.label === 'malicious' ? '#f56565' : '#48bb78'}; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <i class="fas ${securityIcon} ${securityClass}"></i>
+                                <strong>Security Analysis: ${securityInfo.label.toUpperCase()}</strong>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #64748b;">
+                                Confidence: ${securityInfo.confidence ? (securityInfo.confidence * 100).toFixed(1) + '%' : 'N/A'}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div style="background: #f0f9ff; padding: 1rem; border-radius: 8px; border-left: 4px solid #667eea;">
+                            <div style="margin-bottom: 0.5rem;"><strong>IP Address:</strong> ${data.ip}</div>
+                            <div><strong>Port:</strong> ${data.port}</div>
+                        </div>
+                    `;
                 } else {
-                    resultDiv.innerText = "No entry found for the hostname.";
+                    const securityInfo = data.security || {};
+                    resultDiv.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-exclamation-circle status-error"></i>
+                            <span class="status-error">No DNS record found for "${hostname}"</span>
+                        </div>
+                        
+                        ${securityInfo.label ? `
+                        <div style="background: ${securityInfo.label === 'malicious' ? '#fed7d7' : '#f0fff4'}; padding: 1rem; border-radius: 8px; border-left: 4px solid ${securityInfo.label === 'malicious' ? '#f56565' : '#48bb78'}; margin-top: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <i class="fas ${securityInfo.label === 'malicious' ? 'fa-exclamation-triangle' : 'fa-check-circle'} ${securityInfo.label === 'malicious' ? 'status-error' : 'status-safe'}"></i>
+                                <strong>Security Analysis: ${securityInfo.label.toUpperCase()}</strong>
+                            </div>
+                            <div style="font-size: 0.9rem; color: #64748b;">
+                                Confidence: ${securityInfo.confidence ? (securityInfo.confidence * 100).toFixed(1) + '%' : 'N/A'}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b;">
+                            This domain is not registered in the blockchain DNS system.
+                        </div>
+                    `;
                 }
             } catch (error) {
-                resultDiv.innerText = "Error contacting DNS server.";
+                resultDiv.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-exclamation-triangle status-error"></i>
+                        <span class="status-error">Error contacting DNS server</span>
+                    </div>
+                    <div style="margin-top: 0.5rem; font-size: 0.9rem; color: #64748b;">
+                        Please check if the blockchain DNS node is running on port 5001.
+                    </div>
+                `;
+                console.error(error);
+            } finally {
+                isLookingUp = false;
+                lookupBtn.innerHTML = '<i class="fas fa-search"></i> DNS Lookup';
+                lookupBtn.disabled = false;
             }
         }
 
-    async function checkDomain() {
-      const domain = document.getElementById('hostname').value;
-      const resultText = document.getElementById('resultP');
-      const lookupBtn = document.getElementById('lookupBtn');
-
-      if (!domain) {
-        resultText.innerText = "Please enter a domain name.";
-        return;
-      }
-
-      try {
-        const response = await fetch('http://127.0.0.1:5000/predict', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ domain: domain })
+        // Enter key support
+        document.getElementById('hostname').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkDomain();
+            }
         });
 
-        const data = await response.json();
+        // Auto-focus on input
+        document.getElementById('hostname').focus();
 
-        if (data.error) {
-          resultText.innerText = "Error: " + data.error;
-          lookupBtn.disabled = true;
-        } else {
-          resultText.innerText = `Prediction: ${data.label.toUpperCase()}`;
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => {
+                tab.classList.remove('active');
+            });
 
-          // Disable/enable Lookup button based on prediction
-            if ((data.label || "").trim().toLowerCase() === "safe") {
-                lookupBtn.disabled = false;
-                lookupBtn.style.backgroundColor = "#007BFF";
-                lookupBtn.style.color = "white";
-                lookupBtn.style.fontWeight = "bold";
-                lookupBtn.style.border = "none";
+            // Remove active class from all nav tabs
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
 
-            } else {
-                lookupBtn.disabled = true;
-                lookupBtn.style.backgroundColor = "grey";
-                lookupBtn.style.color = "black";
-            }
-
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked nav tab
+            event.target.classList.add('active');
         }
-      } catch (err) {
-        resultText.innerText = "Failed to connect to API.";
-        lookupBtn.disabled = true;
-        console.error(err);
-      }
-    }
     </script>
 </body>
 </html>
