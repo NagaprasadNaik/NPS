@@ -5,6 +5,7 @@ import numpy as np
 import string
 from flask_cors import CORS
 import os
+from ai_agent import dns_agent
 
 
 
@@ -133,6 +134,72 @@ def get_threat_feed():
         # Sort by timestamp (newest first)
         threats.sort(key=lambda x: x['timestamp'], reverse=True)
         return jsonify(threats[:10])  # Return last 10 threats
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+# AI Agent Routes
+@app.route('/ai-chat', methods=['POST'])
+def ai_chat():
+    """Chat with the AI agent using live system data"""
+    try:
+        data = request.json
+        user_message = data.get('message', '')
+        
+        if not user_message:
+            return jsonify({"error": "Message is required"})
+        
+        # AI gets fresh data for every chat message
+        response = dns_agent.chat(user_message, include_system_data=True)
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/ai-help/<section>', methods=['GET'])
+def ai_contextual_help(section):
+    """Get contextual help for dashboard sections with live data"""
+    try:
+        response = dns_agent.get_contextual_help(section)
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/ai-analyze-trends', methods=['GET'])
+def ai_analyze_trends():
+    """Get AI analysis of current system trends"""
+    try:
+        response = dns_agent.analyze_current_trends()
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/ai-dashboard-summary', methods=['GET']) 
+def ai_dashboard_summary():
+    """Get smart summary of current dashboard state"""
+    try:
+        response = dns_agent.get_smart_dashboard_summary()
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/ai-status', methods=['GET'])
+def ai_status():
+    """Check AI agent availability and last data refresh"""
+    try:
+        available = dns_agent.is_ollama_available()
+        live_stats = dns_agent.get_system_stats()
+        
+        return jsonify({
+            "available": available,
+            "model": dns_agent.model,
+            "setup_required": not available,
+            "last_data_refresh": live_stats.get('readable_time', 'Unknown'),
+            "data_sources": {
+                "security_available": 'security' in live_stats and 'error' not in live_stats.get('security', {}),
+                "blockchain_available": 'blockchain' in live_stats and 'error' not in live_stats.get('blockchain', {}),
+                "network_available": 'network' in live_stats and 'error' not in live_stats.get('network', {}),
+                "threats_available": 'threats' in live_stats and 'error' not in live_stats.get('threats', {})
+            }
+        })
     except Exception as e:
         return jsonify({"error": str(e)})
 

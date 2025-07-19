@@ -403,6 +403,573 @@
                 width: 100%;
             }
         }
+
+        /* AI Chat Styles */
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            line-height: 1.5;
+        }
+
+        .chat-message.user {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: 2rem;
+        }
+
+        .chat-message.bot {
+            background: white;
+            border: 1px solid #e2e8f0;
+            margin-right: 2rem;
+        }
+
+        .quick-question-btn {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quick-question-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* AI Assistant Chat Hamburger Menu */
+        .ai-hamburger {
+            background: #667eea;
+            border: none;
+            color: white;
+            padding: 8px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .ai-hamburger:hover {
+            background: #5a6fd8;
+            transform: scale(1.05);
+        }
+
+        .ai-chat-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            min-width: 350px;
+            max-height: 400px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-10px);
+            visibility: hidden;
+            transition: all 0.2s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .ai-chat-dropdown.show {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        .dropdown-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+            background: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .dropdown-header h3 {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chat-dropdown-list {
+            max-height: 320px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Custom scrollbar for chat dropdown */
+        .chat-dropdown-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-dropdown-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .chat-dropdown-list::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        .chat-dropdown-list::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .chat-dropdown-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f3f4;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-dropdown-item:hover {
+            background: #f8f9fa;
+        }
+
+        .chat-dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .chat-dropdown-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-dropdown-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #212529;
+            margin-bottom: 0.2rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-dropdown-time {
+            font-size: 0.7rem;
+            color: #6c757d;
+        }
+
+        .chat-dropdown-source {
+            font-size: 0.6rem;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-top: 0.2rem;
+            display: inline-block;
+        }
+
+        .chat-dropdown-delete-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            padding: 4px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+            margin-left: 0.5rem;
+        }
+
+        .chat-dropdown-delete-btn:hover {
+            opacity: 1;
+            background: rgba(220, 53, 69, 0.1);
+        }
+
+        .chat-dropdown-clear-all-btn {
+            margin: 0.5rem;
+            padding: 0.5rem;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: background 0.2s ease;
+            width: calc(100% - 1rem);
+            position: sticky;
+            bottom: 0;
+        }
+
+        .chat-dropdown-clear-all-btn:hover {
+            background: #c82333;
+        }
+
+        .chat-dropdown-empty {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.85rem;
+        }
+
+        /* Enhanced AI Assistant Styles for Index Page */
+        .ai-assistant-layout {
+            display: flex;
+            height: 80vh;
+            max-width: 800px; /* Constrain width similar to dashboard */
+            margin: 0 auto; /* Center the layout */
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .ai-sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .new-chat-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .recent-chats-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .chat-item-index {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .chat-item-index:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .chat-item-index:hover .chat-title-index,
+        .chat-item-index:hover .chat-time-index,
+        .chat-item-index:hover .chat-source {
+            color: white;
+        }
+
+        .chat-info-index {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-title-index {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #495057;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.25rem;
+        }
+
+        .chat-time-index {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .chat-source {
+            font-size: 0.7rem;
+            color: #667eea;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
+        .delete-chat-btn-index {
+            background: none;
+            border: none;
+            color: #dc3545;
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+            margin-left: 0.5rem;
+        }
+
+        .chat-item-index:hover .delete-chat-btn-index {
+            opacity: 1;
+            color: white;
+        }
+
+        .delete-chat-btn-index:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .ai-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Allow children to shrink for scroll */
+        }
+
+        .ai-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ai-status-indicator {
+            padding: 0.5rem 1rem;
+            background: #f8f9fa;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .full-chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Important for proper flexbox behavior */
+        }
+
+        .chat-messages-full {
+            flex: 1 1 0%;
+            padding: 1.5rem;
+            overflow-y: auto !important;
+            background: #fff;
+            min-height: 0 !important;
+            max-height: 100%;
+        }
+
+        .message-index {
+            display: flex;
+            margin-bottom: 1.5rem;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .message-avatar-index {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .user-message-index .message-avatar-index {
+            background: #667eea;
+            color: white;
+        }
+
+        .assistant-message-index .message-avatar-index {
+            background: #28a745;
+            color: white;
+        }
+
+        .message-content-index {
+            background: #f8f9fa;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            max-width: 70%;
+            word-wrap: break-word;
+            line-height: 1.5;
+            font-size: 0.9rem;
+        }
+
+        .user-message-index {
+            flex-direction: row-reverse;
+        }
+
+        .user-message-index .message-content-index {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Styling for formatted AI responses */
+        .message-content-index strong {
+            font-weight: 600;
+            color: inherit;
+        }
+
+        .message-content-index em {
+            font-style: italic;
+            color: inherit;
+        }
+
+        .message-content-index code {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message-content-index ul {
+            margin: 0.5rem 0;
+            padding-left: 1.2rem;
+        }
+
+        .message-content-index li {
+            margin: 0.2rem 0;
+            list-style-type: disc;
+        }
+
+        .quick-questions-full {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e9ecef;
+            background: #f8f9fa;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .quick-questions-full h3 {
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .question-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .chat-input-full {
+            display: flex;
+            padding: 1.5rem;
+            border-top: 1px solid #e9ecef;
+            background: white;
+            align-items: center;
+            gap: 1rem;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+
+        .chat-input-full input {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border: 1px solid #dee2e6;
+            border-radius: 25px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+
+        .chat-input-full input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .chat-input-full button {
+            width: 45px;
+            height: 45px;
+            background: #667eea;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .chat-input-full button:hover {
+            background: #5a6fd8;
+        }
+
+        /* Responsive Design for Index AI */
+        @media (max-width: 768px) {
+            .ai-assistant-layout {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .ai-sidebar {
+                width: 100%;
+                height: 200px;
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+            }
+            
+            .question-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -425,6 +992,12 @@
                 <i class="fas fa-tachometer-alt"></i>
                 Dashboard
             </button>
+            <div class="ai-nav-container">
+                <button class="nav-tab" onclick="switchTab('ai-assistant')">
+                    <i class="fas fa-robot"></i>
+                    AI Assistant
+                </button>
+            </div>
         </div>
     </div>
 
@@ -458,6 +1031,70 @@
     <div class="tab-content" id="dashboard-tab">
         <div class="dashboard-container">
             <iframe src="http://127.0.0.1:5001/dashboard" width="100%" height="800px" frameborder="0" style="border-radius: 15px; background: white;"></iframe>
+        </div>
+    </div>
+
+    <!-- AI Assistant Tab -->
+    <div class="tab-content" id="ai-assistant-tab">
+        <div class="ai-assistant-layout">
+            <!-- Chat Main Area (Full Width) -->
+            <div class="ai-main" style="width: 100%;">
+                <div class="ai-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="position: relative;">
+                            <button class="ai-hamburger" onclick="toggleChatDropdown(event)" title="Recent Chats">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <!-- Recent Chats Dropdown -->
+                            <div class="ai-chat-dropdown" id="aiChatDropdown">
+                                <div class="dropdown-header">
+                                    <h3><i class="fas fa-history"></i> Recent Chats</h3>
+                                </div>
+                                <div id="chatDropdownChatsList" class="chat-dropdown-list">
+                                    <div style="padding: 1rem; text-align: center; color: #6c757d; font-size: 0.8rem;">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <h2 class="section-title">
+                            <i class="fas fa-robot"></i>
+                            AI Assistant
+                        </h2>
+                    </div>
+                    <div id="ai-status" class="ai-status-indicator">
+                        <div class="loading"></div> Checking AI availability...
+                    </div>
+                </div>
+                
+                <div id="chat-container" class="full-chat-container">
+                    <div style="display: flex; flex-direction: column; height: 100%; flex: 1; min-height: 0;">
+                        <div id="indexChatMessages" class="chat-messages-full" style="flex: 1 1 0%; min-height: 0; overflow-y: auto;">
+                            <!-- Messages will be added here -->
+                        </div>
+                        <div class="quick-questions-full" style="flex-shrink: 0;">
+                            <h3>Live Data Analysis:</h3>
+                            <div class="question-grid">
+                                <button class="quick-question-btn" onclick="askIndexQuickQuestion('What are the current security statistics?')">Current Security Stats</button>
+                                <button class="quick-question-btn" onclick="askIndexQuickQuestion('Analyze current blockchain status')">Blockchain Status</button>
+                                <button class="quick-question-btn" onclick="askIndexQuickQuestion('What threats were detected recently?')">Recent Threats</button>
+                                <button class="quick-question-btn" onclick="getIndexSystemSummary()">System Summary</button>
+                            </div>
+                            <h3>General Questions:</h3>
+                            <div class="question-grid">
+                                <button class="quick-question-btn" onclick="askIndexQuickQuestion('How does blockchain DNS work?')">How does blockchain DNS work?</button>
+                                <button class="quick-question-btn" onclick="askIndexQuickQuestion('Explain the mining process')">Mining Process</button>
+                                <button class="quick-question-btn" onclick="askIndexQuickQuestion('How to add DNS records?')">Add DNS Records</button>
+                                <button class="quick-question-btn" onclick="askIndexQuickQuestion('What makes this system secure?')">Security Features</button>
+                            </div>
+                        </div>
+                        <div class="chat-input-full" style="flex-shrink: 0;">
+                            <input type="text" id="indexChatInput" placeholder="Ask me about blockchain DNS, security, or dashboard data..." autocomplete="off">
+                            <button onclick="sendIndexChatMessage()" title="Send">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -514,6 +1151,19 @@
     </div>
 
     <script>
+        // Clear any cached DNS results on page load to prevent contamination
+        document.addEventListener('DOMContentLoaded', function() {
+            // Clear any old DNS results
+            const dnsResultCard = document.getElementById('dnsResult');
+            if (dnsResultCard) {
+                dnsResultCard.style.display = 'none';
+                dnsResultCard.classList.remove('show');
+            }
+            
+            // Clear local session DNS data
+            sessionStorage.removeItem('indexDnsResults');
+        });
+
         // Enhanced JavaScript with better UX
         let isAnalyzing = false;
         let isLookingUp = false;
@@ -629,6 +1279,9 @@
             // Show result card with loading state
             resultDiv.innerHTML = '<div class="loading"></div> Searching blockchain DNS records...';
             showResultCard('dnsResult');
+            
+            // Store that this is an index page lookup
+            sessionStorage.setItem('indexDnsLookupActive', 'true');
 
             try {
                 const response = await fetch('http://127.0.0.1:5002/dns/request', {
@@ -724,6 +1377,19 @@
 
         // Tab switching functionality
         function switchTab(tabName) {
+            // Clear DNS results when switching away from lookup tab to prevent contamination
+            if (tabName !== 'lookup') {
+                const dnsResultCard = document.getElementById('dnsResult');
+                if (dnsResultCard) {
+                    dnsResultCard.style.display = 'none';
+                    dnsResultCard.classList.remove('show');
+                }
+                sessionStorage.removeItem('indexDnsLookupActive');
+            }
+            
+            // Hide chat dropdown when switching tabs
+            hideChatDropdown();
+            
             // Hide all tab contents
             const tabContents = document.querySelectorAll('.tab-content');
             tabContents.forEach(tab => {
@@ -741,7 +1407,455 @@
             
             // Add active class to clicked nav tab
             event.target.classList.add('active');
+
+            // Initialize AI status when AI tab is selected
+            if (tabName === 'ai-assistant') {
+                checkAIStatus();
+            }
         }
+
+        // Chat dropdown functionality for AI Assistant
+        function toggleChatDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('aiChatDropdown');
+            
+            if (dropdown.classList.contains('show')) {
+                hideChatDropdown();
+            } else {
+                showChatDropdown();
+            }
+        }
+
+        function showChatDropdown() {
+            const dropdown = document.getElementById('aiChatDropdown');
+            dropdown.classList.add('show');
+            loadChatDropdownChats();
+            
+            // Add click outside listener
+            setTimeout(() => {
+                document.addEventListener('click', handleClickOutsideChatDropdown);
+            }, 0);
+        }
+
+        function hideChatDropdown() {
+            const dropdown = document.getElementById('aiChatDropdown');
+            dropdown.classList.remove('show');
+            
+            // Remove click outside listener
+            document.removeEventListener('click', handleClickOutsideChatDropdown);
+        }
+
+        function handleClickOutsideChatDropdown(event) {
+            const dropdown = document.getElementById('aiChatDropdown');
+            const hamburger = document.querySelector('.ai-hamburger');
+            
+            if (!dropdown.contains(event.target) && !hamburger.contains(event.target)) {
+                hideChatDropdown();
+            }
+        }
+
+        function loadChatDropdownChats() {
+            const chatList = document.getElementById('chatDropdownChatsList');
+            chatList.innerHTML = '';
+            
+            // Load from global chat history
+            const globalHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
+            
+            if (globalHistory.length === 0) {
+                chatList.innerHTML = `
+                    <div class="chat-dropdown-empty">
+                        <i class="fas fa-comments" style="font-size: 2rem; margin-bottom: 0.5rem; color: #dee2e6;"></i>
+                        <div>No chats yet</div>
+                        <div style="font-size: 0.75rem; margin-top: 0.25rem;">Start a conversation below!</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Show up to 15 chats with scroll
+            globalHistory.slice(0, 15).forEach(chat => {
+                const chatItem = document.createElement('div');
+                chatItem.className = 'chat-dropdown-item';
+                chatItem.innerHTML = `
+                    <div class="chat-dropdown-info" onclick="loadChatFromDropdown('${chat.id}')">
+                        <div class="chat-dropdown-title">${chat.title}</div>
+                        <div class="chat-dropdown-time">${formatIndexTime(chat.timestamp)}</div>
+                        <div class="chat-dropdown-source">${chat.source === 'dashboard' ? '📊 Dashboard' : '🏠 Index'}</div>
+                    </div>
+                    <button class="chat-dropdown-delete-btn" onclick="deleteChatFromDropdown('${chat.id}')" title="Delete chat">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                chatList.appendChild(chatItem);
+            });
+            
+            // Add "Clear All" button if there are chats
+            if (globalHistory.length > 0) {
+                const clearAllBtn = document.createElement('button');
+                clearAllBtn.className = 'chat-dropdown-clear-all-btn';
+                clearAllBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Clear All Chats';
+                clearAllBtn.onclick = clearAllChatsFromDropdown;
+                chatList.appendChild(clearAllBtn);
+            }
+        }
+
+        function loadChatFromDropdown(chatId) {
+            hideChatDropdown();
+            loadIndexChat(chatId);
+        }
+
+        function deleteChatFromDropdown(chatId) {
+            if (confirm('Delete this chat?')) {
+                // Remove from global history
+                let globalHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
+                globalHistory = globalHistory.filter(c => c.id !== chatId);
+                localStorage.setItem('aiChatHistory', JSON.stringify(globalHistory));
+                
+                // Reload chat dropdown
+                loadChatDropdownChats();
+                
+                // If this was the current chat, start a new one or load another
+                if (indexCurrentChatId === chatId) {
+                    if (globalHistory.length > 0) {
+                        const mostRecent = globalHistory[0];
+                        loadIndexChat(mostRecent.id);
+                    } else {
+                        startNewIndexChat();
+                    }
+                }
+            }
+        }
+
+        function clearAllChatsFromDropdown() {
+            if (confirm('Delete all chat history? This cannot be undone.')) {
+                localStorage.removeItem('aiChatHistory');
+                loadChatDropdownChats();
+                
+                // Start a new chat since all are cleared
+                startNewIndexChat();
+            }
+        }
+
+        // Enhanced AI Assistant Functions for Index Page
+        let indexChatHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
+        let indexCurrentChatId = null;
+
+        async function checkAIStatus() {
+            const statusIndicator = document.querySelector('.ai-status-indicator');
+            const chatContainer = document.getElementById('chat-container');
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/ai-status');
+                const data = await response.json();
+
+                if (data.available) {
+                    statusIndicator.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%;"></div>
+                            <span style="color: #22c55e;">AI Assistant Ready</span>
+                        </div>
+                    `;
+                    chatContainer.style.display = 'block';
+                    loadIndexRecentChats();
+                    if (!indexCurrentChatId) {
+                        startNewIndexChat();
+                    }
+                } else {
+                    statusIndicator.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></div>
+                            <span style="color: #ef4444;">AI Assistant Offline</span>
+                        </div>
+                    `;
+                    chatContainer.style.display = 'none';
+                }
+            } catch (error) {
+                statusIndicator.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <div style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></div>
+                        <span style="color: #ef4444;">AI Assistant Offline</span>
+                    </div>
+                `;
+                chatContainer.style.display = 'none';
+            }
+        }
+
+        function startNewIndexChat() {
+            indexCurrentChatId = 'index_chat_' + Date.now();
+            const newChat = {
+                id: indexCurrentChatId,
+                title: 'New Chat',
+                messages: [],
+                timestamp: new Date().toISOString(),
+                source: 'index'
+            };
+            
+            // Add to global chat history
+            let globalHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
+            globalHistory.unshift(newChat);
+            localStorage.setItem('aiChatHistory', JSON.stringify(globalHistory));
+            
+            loadIndexRecentChats();
+            clearIndexChatMessages();
+            
+            // Add welcome message
+            addIndexMessageToChat('assistant', 'Hello! I\'m your Blockchain DNS AI Assistant. I can help you understand your dashboard data, security analytics, and blockchain performance. What would you like to know?');
+        }
+
+        function loadIndexChat(chatId) {
+            indexCurrentChatId = chatId;
+            
+            // Load from global chat history
+            let globalHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
+            const chat = globalHistory.find(c => c.id === chatId);
+            
+            if (chat) {
+                clearIndexChatMessages();
+                chat.messages.forEach(msg => {
+                    addIndexMessageToChat(msg.role, msg.content, false);
+                });
+                scrollIndexToBottom();
+            }
+        }
+
+        function deleteIndexChat(chatId) {
+            if (confirm('Delete this chat?')) {
+                // Remove from global history
+                let globalHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
+                globalHistory = globalHistory.filter(c => c.id !== chatId);
+                localStorage.setItem('aiChatHistory', JSON.stringify(globalHistory));
+                
+                // Reload recent chats
+                loadIndexRecentChats();
+                
+                // If this was the current chat, start a new one or load another
+                if (indexCurrentChatId === chatId) {
+                    if (globalHistory.length > 0) {
+                        // Load the most recent chat
+                        const mostRecent = globalHistory[0];
+                        loadIndexChat(mostRecent.id);
+                    } else {
+                        // Start fresh if no chats left
+                        startNewIndexChat();
+                    }
+                }
+            }
+        }
+
+        function clearAllIndexChats() {
+            if (confirm('Delete all chat history? This cannot be undone.')) {
+                localStorage.removeItem('aiChatHistory');
+                loadIndexRecentChats();
+                startNewIndexChat();
+            }
+        }
+
+        function loadIndexRecentChats() {
+            // This function is no longer needed since we removed the sidebar
+            // Recent chats are now handled by the nav dropdown
+            return;
+        }
+
+        function updateChatCountBadge(count) {
+            // No badge anymore since we removed the sidebar
+            return;
+        }
+
+        function formatIndexTime(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMins / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            return `${diffDays}d ago`;
+        }
+
+        function saveIndexChatHistory() {
+            localStorage.setItem('aiChatHistory', JSON.stringify(indexChatHistory));
+        }
+
+        function clearIndexChatMessages() {
+            document.getElementById('indexChatMessages').innerHTML = '';
+        }
+
+        // Convert basic Markdown to HTML for AI responses
+        function markdownToHtml(text) {
+            if (!text) return '';
+            
+            return text
+                // Convert **bold** to <strong>bold</strong>
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                // Convert *italic* to <em>italic</em>
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                // Convert `code` to <code>code</code>
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                // Convert line breaks to <br>
+                .replace(/\n/g, '<br>')
+                // Convert bullet points (starting with * or -)
+                .replace(/^[\*\-]\s+(.+)$/gm, '<li>$1</li>')
+                // Wrap consecutive <li> elements in <ul>
+                .replace(/(<li>.*<\/li>(?:\s*<li>.*<\/li>)*)/gs, '<ul>$1</ul>')
+                // Convert numbered lists (starting with numbers)
+                .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+                // Clean up any remaining line breaks around lists
+                .replace(/<br>\s*<ul>/g, '<ul>')
+                .replace(/<\/ul>\s*<br>/g, '</ul>');
+        }
+
+        function addIndexMessageToChat(role, content, save = true) {
+            const messagesContainer = document.getElementById('indexChatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-index ${role}-message-index`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar-index';
+            avatar.innerHTML = role === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content-index';
+            
+            // Convert Markdown to HTML for bot messages, keep text for user messages
+            if (role === 'assistant' || role === 'bot') {
+                contentDiv.innerHTML = markdownToHtml(content);
+            } else {
+                contentDiv.textContent = content;
+            }
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+            
+            if (save && indexCurrentChatId) {
+                // Update global chat history
+                let globalHistory = JSON.parse(localStorage.getItem('aiChatHistory') || '[]');
+                let chat = globalHistory.find(c => c.id === indexCurrentChatId);
+                
+                if (!chat) {
+                    chat = {
+                        id: indexCurrentChatId,
+                        title: 'New Chat',
+                        messages: [],
+                        timestamp: new Date().toISOString(),
+                        source: 'index'
+                    };
+                    globalHistory.unshift(chat);
+                }
+                
+                chat.messages.push({ role, content, timestamp: new Date().toISOString() });
+                
+                // Update chat title with first user message
+                if (role === 'user' && chat.messages.filter(m => m.role === 'user').length === 1) {
+                    chat.title = content.slice(0, 30) + (content.length > 30 ? '...' : '');
+                }
+                
+                localStorage.setItem('aiChatHistory', JSON.stringify(globalHistory));
+                loadIndexRecentChats();
+            }
+            
+            scrollIndexToBottom();
+        }
+
+        function scrollIndexToBottom() {
+            const messagesContainer = document.getElementById('indexChatMessages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        async function sendIndexChatMessage() {
+            const input = document.getElementById('indexChatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addIndexMessageToChat('user', message);
+            input.value = '';
+            
+            // Show typing indicator
+            showIndexTypingIndicator();
+            
+            try {
+                const response = await fetch('http://127.0.0.1:5000/ai-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                hideIndexTypingIndicator();
+                
+                if (data.error) {
+                    addIndexMessageToChat('assistant', `Error: ${data.error}`);
+                } else {
+                    addIndexMessageToChat('assistant', data.response);
+                }
+            } catch (error) {
+                hideIndexTypingIndicator();
+                addIndexMessageToChat('assistant', 'Sorry, I encountered an error. Please try again.');
+            }
+        }
+
+        function showIndexTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.id = 'indexTypingIndicator';
+            indicator.className = 'message-index assistant-message-index typing-indicator';
+            indicator.innerHTML = `
+                <div class="message-avatar-index"><i class="fas fa-robot"></i></div>
+                <div class="message-content-index">
+                    <div class="typing-dots">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('indexChatMessages').appendChild(indicator);
+            scrollIndexToBottom();
+        }
+
+        function hideIndexTypingIndicator() {
+            const indicator = document.getElementById('indexTypingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        // Quick question buttons
+        function askIndexQuickQuestion(question) {
+            document.getElementById('indexChatInput').value = question;
+            sendIndexChatMessage();
+        }
+
+        async function getIndexSystemSummary() {
+            askIndexQuickQuestion('Provide a comprehensive summary of the current system state');
+        }
+
+        // Handle enter key in chat input
+        document.addEventListener('DOMContentLoaded', function() {
+            const indexChatInput = document.getElementById('indexChatInput');
+            if (indexChatInput) {
+                indexChatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendIndexChatMessage();
+                    }
+                });
+            }
+            
+            // Prevent quick dropdown from closing when clicking inside it
+            const quickChatDropdown = document.getElementById('quickChatDropdown');
+            if (quickChatDropdown) {
+                quickChatDropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        });
     </script>
 </body>
 </html>
